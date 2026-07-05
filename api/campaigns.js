@@ -1,12 +1,11 @@
-const { supabase } = require('./_supabase');
+import { supabase } from './_supabase.js';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET /api/campaigns — list all campaigns
   if (req.method === 'GET') {
     const { data, error } = await supabase
       .from('campaigns_v2')
@@ -16,11 +15,9 @@ module.exports = async (req, res) => {
     return res.json(data || []);
   }
 
-  // POST /api/campaigns — create new campaign
   if (req.method === 'POST') {
     const { name, startDate, endDate, rules, status } = req.body;
     if (!name) return res.status(400).json({ error: 'Campaign name is required' });
-
     const { data, error } = await supabase
       .from('campaigns_v2')
       .insert({
@@ -37,4 +34,4 @@ module.exports = async (req, res) => {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-};
+}
