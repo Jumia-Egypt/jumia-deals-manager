@@ -1,4 +1,4 @@
-import { supabase } from './_supabase.js';
+const { supabase } = require('./_supabase.js');
 
 const CATALOG = {
   "123456EG": { livePrice: 45000, bestPrice: 41500, priceBeforeDiscount: 48000, stock: 120, minMargin: 40000, category: "Phones" },
@@ -6,7 +6,7 @@ const CATALOG = {
   "456789EG": { livePrice: 5500, bestPrice: 4800, priceBeforeDiscount: 7000, stock: 200, minMargin: 4500, category: "Fashion" }
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
   const { data: campaign } = await supabase.from('campaigns_v2').select('rules').eq('id', campaignId).single();
   const rules = campaign?.rules || { minDiscount: 5, maxDiscount: 80, eligibleCategories: ['Electronics', 'Fashion', 'Home', 'Appliances'] };
-  const product = CATALOG[sku] || { livePrice: 10000, bestPrice: 8900, priceBeforeDiscount: 12000, stock: 100, minMargin: 5000, category: rules.eligibleCategories[0] || 'Electronics' };
+  const product = CATALOG[sku] || { livePrice: 10000, bestPrice: 8900, priceBeforeDiscount: 12000, stock: 100, minMargin: 5000, category: rules.eligibleCategories[0] || 'Phones' };
 
   const price = parseFloat(newPrice);
   const stock = parseInt(newStock);
@@ -42,3 +42,4 @@ export default async function handler(req, res) {
   if (errors.length > 0) return res.json({ valid: false, error: errors.join(' AND '), errors });
   const finalDiscount = ((product.priceBeforeDiscount - price) / product.priceBeforeDiscount) * 100;
   return res.json({ valid: true, discountPercent: finalDiscount.toFixed(2), savings: (product.priceBeforeDiscount - price).toFixed(2), message: 'Valid campaign price. Ready for submission.' });
+};
