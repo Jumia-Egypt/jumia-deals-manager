@@ -4,7 +4,7 @@ const CATALOG = {
   "456789EG": { sku: "456789EG", name: "Nike Air Max 270 - Men's Sneaker", brand: "Nike", category: "Fashion", sellerSku: "NK-AM270-M-42", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80", livePrice: 5500, bestPrice: 4800, priceBeforeDiscount: 7000, currentDiscount: 21.4, stock: 200, minMargin: 4500 }
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -14,3 +14,4 @@ export default async function handler(req, res) {
   const { sku } = req.query;
   const product = CATALOG[sku] || { sku, name: "Mobile Phone", brand: "Generic", category: "Phones", sellerSku: "GEN-MOB-PHN", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80", livePrice: 10000, bestPrice: 8900, priceBeforeDiscount: 12000, currentDiscount: 16.67, stock: 100, minMargin: 5000 };
   return res.json(product);
+};
