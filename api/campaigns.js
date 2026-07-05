@@ -1,4 +1,4 @@
-import { supabase } from './_supabase.js';
+const { supabase } = require('./_supabase.js');
 
 const mapCampaign = (c) => ({
   id: c.id,
@@ -11,7 +11,7 @@ const mapCampaign = (c) => ({
   createdAt: c.created_at
 });
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -36,4 +36,13 @@ export default async function handler(req, res) {
         start_date: startDate || null,
         end_date: endDate || null,
         rules: rules || { minDiscount: 5, maxDiscount: 80, eligibleCategories: ['Electronics', 'Fashion', 'Home', 'Appliances'] },
-        status: status || 'Active
+        status: status || 'Active'
+      })
+      .select()
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(201).json(mapCampaign(data));
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+};
