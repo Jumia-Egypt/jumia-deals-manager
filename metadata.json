@@ -1,0 +1,6 @@
+{
+  "name": "Jumia Deals Manager",
+  "description": "Enterprise-grade SaaS tool for Jumia Egypt Marketplace vendors to manage promotional campaigns.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

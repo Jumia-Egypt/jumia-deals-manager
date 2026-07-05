@@ -1,0 +1,364 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Target, TrendingUp, ShoppingCart, Package, Calendar, Info } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import clsx from 'clsx';
+import { motion, AnimatePresence } from 'motion/react';
+
+interface MyPerformanceProps {
+  vendorId?: string | null;
+}
+
+export function MyPerformance({ vendorId }: MyPerformanceProps) {
+  const [activeMetric, setActiveMetric] = useState<'gmv' | 'orders' | 'items'>('gmv');
+  const [vendorData, setVendorData] = useState<any>(null);
+  const [selectedDay, setSelectedDay] = useState<any>(null);
+  const hoveredDayRef = useRef<any>(null);
+
+  useEffect(() => {
+    setSelectedDay(null);
+    hoveredDayRef.current = null;
+  }, [vendorId]);
+
+  useEffect(() => {
+    // Read from localStorage to share data with Admin tool (VendorManagement)
+    const saved = localStorage.getItem('vendorsData');
+    if (saved) {
+      const vendors = JSON.parse(saved);
+      // Find the logged in vendor, fallback to the first one if not specified or not found
+      const currentVendor = vendors.find((v: any) => v.id === vendorId) || vendors[0];
+      setVendorData(currentVendor);
+    } else {
+      // Setup default fallback in case no data in localStorage yet
+      const defaultVendors = [
+        {
+          id: '884920',
+          name: 'Tech Store Egypt',
+          targetGMV: 500000,
+          achievementGMV: 425000,
+          countOfOrders: 1450,
+          grossItemSold: 2005,
+          dailyData: [
+            { date: '1 Jul', gmv: 45000, orders: 150, items: 210 },
+            { date: '2 Jul', gmv: 52000, orders: 180, items: 250 },
+            { date: '3 Jul', gmv: 48000, orders: 165, items: 230 },
+            { date: '4 Jul', gmv: 61000, orders: 210, items: 290 },
+            { date: '5 Jul', gmv: 59000, orders: 195, items: 275 },
+            { date: '6 Jul', gmv: 75000, orders: 260, items: 350 },
+            { date: '7 Jul', gmv: 85000, orders: 290, items: 400 },
+          ]
+        },
+        {
+          id: '884921',
+          name: 'Fashion Hub',
+          targetGMV: 200000,
+          achievementGMV: 180000,
+          countOfOrders: 850,
+          grossItemSold: 1100,
+          dailyData: []
+        }
+      ];
+      const currentVendor = defaultVendors.find((v: any) => v.id === vendorId) || defaultVendors[0];
+      setVendorData(currentVendor);
+    }
+  }, [vendorId]);
+
+  if (!vendorData) {
+    return <div className="p-8 text-center text-slate-500">Loading performance data...</div>;
+  }
+  
+  const targetGMV = vendorData.targetGMV || 0;
+  const currentGMV = vendorData.achievementGMV || 0;
+  const progress = targetGMV > 0 ? (currentGMV / targetGMV) * 100 : 0;
+
+  const totalOrders = vendorData.countOfOrders || 0;
+  const totalItems = vendorData.grossItemSold || 0;
+  const chartData = vendorData.dailyData || [];
+
+  const getMetricConfig = () => {
+    switch (activeMetric) {
+      case 'gmv': return { key: 'gmv', name: 'GMV (EGP)', color: '#f97316' };
+      case 'orders': return { key: 'orders', name: 'Count of Orders', color: '#3b82f6' };
+      case 'items': return { key: 'items', name: 'Gross Items Sold', color: '#8b5cf6' };
+    }
+  };
+
+  const config = getMetricConfig();
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">My Performance</h2>
+        <p className="text-sm text-slate-500 mt-1">Track your campaign achievements against your targets.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-xl bg-orange-50 text-orange-600">
+              <Target className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Needed Target (GMV)</p>
+              <h3 className="text-3xl font-black text-slate-900">{targetGMV.toLocaleString()} <span className="text-lg text-slate-400">EGP</span></h3>
+            </div>
+          </div>
+          
+          <div className="space-y-2 mt-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-xs font-bold text-slate-500">Current Achievement</p>
+                <p className="text-lg font-bold text-orange-600">{currentGMV.toLocaleString()} EGP</p>
+              </div>
+              <p className="text-xl font-black text-slate-900">{progress.toFixed(1)}%</p>
+            </div>
+            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000"
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 text-white flex flex-col justify-center relative overflow-hidden">
+          <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
+          <div className="relative z-10 grid grid-cols-2 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-2 text-slate-400">
+                <ShoppingCart className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Total Orders</span>
+              </div>
+              <p className="text-3xl font-black">{totalOrders.toLocaleString()}</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-2 text-slate-400">
+                <Package className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Gross Items</span>
+              </div>
+              <p className="text-3xl font-black">{totalItems.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+          <h3 className="text-lg font-bold text-slate-900">Daily Progress</h3>
+          <div className="flex bg-slate-100 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveMetric('gmv')}
+              className={clsx(
+                "px-4 py-2 rounded-md text-sm font-bold transition-all",
+                activeMetric === 'gmv' ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              GMV
+            </button>
+            <button
+              onClick={() => setActiveMetric('orders')}
+              className={clsx(
+                "px-4 py-2 rounded-md text-sm font-bold transition-all",
+                activeMetric === 'orders' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Orders
+            </button>
+            <button
+              onClick={() => setActiveMetric('items')}
+              className={clsx(
+                "px-4 py-2 rounded-md text-sm font-bold transition-all",
+                activeMetric === 'items' ? "bg-white text-purple-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Gross IS
+            </button>
+          </div>
+        </div>
+
+        <div className="h-[350px] w-full">
+          {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart 
+              data={chartData} 
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              className="cursor-pointer"
+              onMouseMove={(state: any) => {
+                if (state && typeof state.activeTooltipIndex === 'number' && chartData[state.activeTooltipIndex]) {
+                  hoveredDayRef.current = chartData[state.activeTooltipIndex];
+                }
+              }}
+              onClick={() => {
+                if (hoveredDayRef.current) {
+                  setSelectedDay(hoveredDayRef.current);
+                }
+              }}
+            >
+              <defs>
+                <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={config.color} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={config.color} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="date" 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: '#64748b' }}
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: '#64748b' }}
+                tickFormatter={(val) => activeMetric === 'gmv' ? `${(val/1000)}k` : val}
+                dx={-10}
+              />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}
+                formatter={(value: number) => [
+                  activeMetric === 'gmv' ? `${value.toLocaleString()} EGP` : value.toLocaleString(), 
+                  config.name
+                ]}
+              />
+              <Area 
+                type="monotone" 
+                dataKey={config.key} 
+                stroke={config.color} 
+                strokeWidth={3}
+                fillOpacity={1} 
+                fill="url(#colorMetric)" 
+                dot={{ r: 4, stroke: config.color, strokeWidth: 2, fill: '#fff' }}
+                activeDot={{ r: 7, stroke: config.color, strokeWidth: 2, fill: '#fff' }}
+                onClick={(data: any) => {
+                  if (data && data.payload) {
+                    setSelectedDay(data.payload);
+                  }
+                }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-400 italic">
+              No daily data available yet.
+            </div>
+          )}
+        </div>
+
+        {/* Date Selection Quick Pills */}
+        {chartData.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider ml-1 mr-2 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              Quick Select Date:
+            </span>
+            {chartData.map((day: any) => {
+              const isSelected = selectedDay && selectedDay.date === day.date;
+              return (
+                <button
+                  key={day.date}
+                  type="button"
+                  onClick={() => setSelectedDay(day)}
+                  className={clsx(
+                    "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border",
+                    isSelected
+                      ? "bg-orange-500 text-white border-orange-500 shadow-sm scale-105"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:scale-95"
+                  )}
+                >
+                  {day.date}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Selected Day Breakdown */}
+        <div className="mt-6 pt-6 border-t border-slate-100">
+          <AnimatePresence mode="wait">
+            {selectedDay ? (
+              <motion.div
+                key={selectedDay.date}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-orange-50 rounded-lg text-orange-500">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-800">
+                      Daily Breakdown for <span className="text-orange-600 font-extrabold">{selectedDay.date}</span>
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDay(null)}
+                    className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/50"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* GMV Breakdown */}
+                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
+                    <div className="p-2.5 bg-orange-500/10 rounded-lg text-orange-600">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">GMV Achievement</p>
+                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
+                        {Number(selectedDay.gmv || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">EGP</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Orders Breakdown */}
+                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
+                    <div className="p-2.5 bg-blue-500/10 rounded-lg text-blue-600">
+                      <ShoppingCart className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Count of Orders</p>
+                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
+                        {Number(selectedDay.orders || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">Orders</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Items Breakdown */}
+                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
+                    <div className="p-2.5 bg-purple-500/10 rounded-lg text-purple-600">
+                      <Package className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gross Items Sold (IS)</p>
+                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
+                        {Number(selectedDay.items || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">Items</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2.5 text-xs font-semibold text-slate-400 bg-slate-50 p-4 rounded-xl border border-slate-100"
+              >
+                <Info className="w-4 h-4 text-orange-500 shrink-0" />
+                <span>Tip: Click on any date point inside the graph above to view its detailed breakdown for GMV, Orders, and Gross IS.</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+}
