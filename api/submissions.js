@@ -1,5 +1,5 @@
-import { supabase } from './_supabase.js';
-import { randomUUID } from 'crypto';
+const { supabase } = require('./_supabase.js');
+const { randomUUID } = require('crypto');
 
 const CATALOG = {
   "123456EG": { name: "Samsung Galaxy S24 Ultra 256GB - Titanium Black", brand: "Samsung", category: "Phones", livePrice: 45000, bestPrice: 41500 },
@@ -7,7 +7,7 @@ const CATALOG = {
   "456789EG": { name: "Nike Air Max 270 - Men's Sneaker", brand: "Nike", category: "Fashion", livePrice: 5500, bestPrice: 4800 }
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -51,3 +51,4 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+};
