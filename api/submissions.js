@@ -2,8 +2,8 @@ import { supabase } from './_supabase.js';
 import { randomUUID } from 'crypto';
 
 const CATALOG = {
-  "123456EG": { name: "Samsung Galaxy S24 Ultra 256GB - Titanium Black", brand: "Samsung", category: "Electronics", livePrice: 45000, bestPrice: 41500 },
-  "789012EG": { name: "Apple AirPods Pro (2nd generation)", brand: "Apple", category: "Electronics", livePrice: 12000, bestPrice: 10900 },
+  "123456EG": { name: "Samsung Galaxy S24 Ultra 256GB - Titanium Black", brand: "Samsung", category: "Phones", livePrice: 45000, bestPrice: 41500 },
+  "789012EG": { name: "Apple AirPods Pro (2nd generation)", brand: "Apple", category: "Phones accessories", livePrice: 12000, bestPrice: 10900 },
   "456789EG": { name: "Nike Air Max 270 - Men's Sneaker", brand: "Nike", category: "Fashion", livePrice: 5500, bestPrice: 4800 }
 };
 
@@ -51,4 +51,3 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-}
