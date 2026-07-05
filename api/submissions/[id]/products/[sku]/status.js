@@ -1,6 +1,6 @@
-import { supabase } from '../../../../_supabase.js';
+const { supabase } = require('../../../../_supabase.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -35,4 +35,4 @@ export default async function handler(req, res) {
   if (error) return res.status(500).json({ error: error.message });
 
   return res.json({ success: true, submission: { id: data.id, campaignId: data.campaign_id, campaignName: data.campaign_name, vendorId: data.vendor_id, vendorName: data.vendor_name, timestamp: data.submitted_at, status: data.status, products: data.products || [] } });
-}
+};
