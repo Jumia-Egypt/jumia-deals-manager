@@ -1,8 +1,8 @@
 import { supabase } from './_supabase.js';
 
 const CATALOG = {
-  "123456EG": { livePrice: 45000, bestPrice: 41500, priceBeforeDiscount: 48000, stock: 120, minMargin: 40000, category: "Electronics" },
-  "789012EG": { livePrice: 12000, bestPrice: 10900, priceBeforeDiscount: 14000, stock: 45, minMargin: 10500, category: "Electronics" },
+  "123456EG": { livePrice: 45000, bestPrice: 41500, priceBeforeDiscount: 48000, stock: 120, minMargin: 40000, category: "Phones" },
+  "789012EG": { livePrice: 12000, bestPrice: 10900, priceBeforeDiscount: 14000, stock: 45, minMargin: 10500, category: "Phones accessories" },
   "456789EG": { livePrice: 5500, bestPrice: 4800, priceBeforeDiscount: 7000, stock: 200, minMargin: 4500, category: "Fashion" }
 };
 
@@ -42,4 +42,3 @@ export default async function handler(req, res) {
   if (errors.length > 0) return res.json({ valid: false, error: errors.join(' AND '), errors });
   const finalDiscount = ((product.priceBeforeDiscount - price) / product.priceBeforeDiscount) * 100;
   return res.json({ valid: true, discountPercent: finalDiscount.toFixed(2), savings: (product.priceBeforeDiscount - price).toFixed(2), message: 'Valid campaign price. Ready for submission.' });
-}
