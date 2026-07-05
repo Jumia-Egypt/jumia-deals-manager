@@ -1,5 +1,16 @@
 import { supabase } from './_supabase.js';
 
+const mapCampaign = (c) => ({
+  id: c.id,
+  name: c.name,
+  type: c.type || '',
+  startDate: c.start_date,
+  endDate: c.end_date,
+  status: c.status,
+  rules: c.rules || {},
+  createdAt: c.created_at
+});
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -12,7 +23,7 @@ export default async function handler(req, res) {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
-    return res.json(data || []);
+    return res.json((data || []).map(mapCampaign));
   }
 
   if (req.method === 'POST') {
@@ -25,13 +36,4 @@ export default async function handler(req, res) {
         start_date: startDate || null,
         end_date: endDate || null,
         rules: rules || { minDiscount: 5, maxDiscount: 80, eligibleCategories: ['Electronics', 'Fashion', 'Home', 'Appliances'] },
-        status: status || 'Active'
-      })
-      .select()
-      .single();
-    if (error) return res.status(500).json({ error: error.message });
-    return res.status(201).json(data);
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
+        status: status || 'Active
