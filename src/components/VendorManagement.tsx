@@ -221,6 +221,25 @@ export function VendorManagement() {
   });
 
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+
+  // Sync vendors from Supabase on mount (for cross-browser login support)
+  useEffect(() => {
+    fetch('/api/vendors')
+      .then(r => r.json())
+      .then(apiVendors => {
+        if (!Array.isArray(apiVendors)) return;
+        setVendors(prev => {
+          const merged = [...prev];
+          apiVendors.forEach((av: any) => {
+            if (!merged.find(v => v.email === av.email)) {
+              merged.push({ ...av, targetGMV: 200000, achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [] });
+            }
+          });
+          return merged;
+        });
+      })
+      .catch(() => {});
+  }, []);
   
   // Custom states for adding a new vendor
   const [isAddingVendor, setIsAddingVendor] = useState(false);
@@ -484,6 +503,12 @@ export function VendorManagement() {
       dailyData: []
     };
 
+    // Save to Supabase so vendor can log in from any browser
+    fetch('/api/vendors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: nameClean, email: emailClean, password: passwordClean })
+    }).catch(() => {});
     setVendors([...vendors, newVendor]);
     
     // Reset states
