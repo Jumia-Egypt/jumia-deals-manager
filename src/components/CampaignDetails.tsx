@@ -209,6 +209,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
 
   const allValid = entries.filter(e => e.sku).length > 0 && entries.filter(e => e.sku).every(e => e.validation?.valid);
   const [bulkProgress, setBulkProgress] = useState<{total: number, loaded: number} | null>(null);
+  const [batchStatus, setBatchStatus] = useState<{type: 'loading'|'pausing', batch: number, total: number, countdown?: number} | null>(null);
   const bulkEntryIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -254,16 +255,26 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     bulkEntryIdsRef.current = ids;
     setBulkProgress({ total: newEntries.length, loaded: 0 });
     await new Promise(r => setTimeout(r, 3000));
-    // Batch + pause: 20 SKUs per batch, 30s pause between batches
+    // Batch + pause with live countdown status
     const BATCH_SIZE = 20;
     const SKU_DELAY = 1500;
-    const BATCH_PAUSE = 30000;
-    newEntries.forEach((entry, i) => {
-      const batch = Math.floor(i / BATCH_SIZE);
-      const posInBatch = i % BATCH_SIZE;
-      const delay = batch * (BATCH_SIZE * SKU_DELAY + BATCH_PAUSE) + posInBatch * SKU_DELAY;
-      setTimeout(() => handleSkuChange(entry.id, entry.sku), delay);
-    });
+    const PAUSE_SECS = 30;
+    const totalBatches = Math.ceil(newEntries.length / BATCH_SIZE);
+    (async () => {
+      for (let b = 0; b < totalBatches; b++) {
+        const slice = newEntries.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+        setBatchStatus({ type: 'loading', batch: b + 1, total: totalBatches });
+        slice.forEach((entry, j) => setTimeout(() => handleSkuChange(entry.id, entry.sku), j * SKU_DELAY));
+        await new Promise(r => setTimeout(r, slice.length * SKU_DELAY));
+        if (b < totalBatches - 1) {
+          for (let cd = PAUSE_SECS; cd > 0; cd--) {
+            setBatchStatus({ type: 'pausing', batch: b + 1, total: totalBatches, countdown: cd });
+            await new Promise(r => setTimeout(r, 1000));
+          }
+        }
+      }
+      setBatchStatus(null);
+    })();
   };
 
   const handleSubmit = async () => {
@@ -541,6 +552,18 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                    </div>
              )}
            </div>
+           {batchStatus && (
+             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold ${
+               batchStatus.type === 'pausing'
+                 ? 'bg-amber-50 text-amber-700 border-amber-200'
+                 : 'bg-blue-50 text-blue-700 border-blue-200'
+             }`}>
+               {batchStatus.type === 'loading'
+                 ? <><span className="animate-pulse">⏳</span> Batch {batchStatus.batch}/{batchStatus.total} loading...</>
+                 : <><span className="animate-pulse">⏸</span> Pausing {batchStatus.countdown}s before next batch</>
+               }
+             </div>
+           )}
         </div>
 
         {/* Scrollable Container for Table */}
@@ -766,16 +789,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             <p className="text-[10px] font-black text-slate-400 hidden sm:block tracking-wider uppercase bg-slate-100 px-2 py-1 rounded">
               TIP: PRESS ENTER TO AUTO-ADD NEXT ROW
             </p>
-            <a
-              href="https://www.jumia.com.eg"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-1.5 bg-slate-50 hover:bg-green-50 text-slate-600 hover:text-green-700 border border-slate-200 hover:border-green-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
-              title="Open Jumia in a new tab to activate product lookup"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Connect to Jumia</span>
-            </a>
+
                       <button
               onClick={() => setEntries(prev => [...prev, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }])}
               className="px-4 py-1.5 bg-slate-50 hover:bg-orange-50 text-slate-600 hover:text-orange-600 border border-slate-200 hover:border-orange-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
