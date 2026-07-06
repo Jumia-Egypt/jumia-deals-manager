@@ -9,34 +9,23 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     const { data, error } = await supabase
       .from('users')
-      .select('id, name, email, role, created_at')
+      .select('id, name, email, role, password, target_gmv, created_at')
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data || []);
   }
 
   if (req.method === 'POST') {
-    const { name, email, password, role } = req.body || {};
+    const { name, email, password, role, target_gmv } = req.body || {};
     if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
-
     const normalizedEmail = email.toLowerCase().trim();
-
-    // Case-insensitive duplicate check
-    const { data: existing } = await supabase
-      .from('users').select('id').ilike('email', normalizedEmail).maybeSingle();
+    const { data: existing } = await supabase.from('users').select('id').ilike('email', normalizedEmail).maybeSingle();
     if (existing) return res.status(409).json({ error: 'A user with this email already exists' });
-
     const { data, error } = await supabase
       .from('users')
-      .insert([{
-        name: name.trim(),
-        email: normalizedEmail,
-        password,
-        role: (role || 'VENDOR').toUpperCase()
-      }])
-      .select('id, name, email, role, created_at')
+      .insert([{ name: name.trim(), email: normalizedEmail, password, role: (role || 'VENDOR').toUpperCase(), target_gmv: target_gmv || 200000 }])
+      .select('id, name, email, role, password, target_gmv, created_at')
       .single();
-
     if (error) return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
   }
