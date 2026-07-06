@@ -136,7 +136,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     if (sku.length >= 6) {
       setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: true } : e));
       try {
-        const res = await fetch(`https://www.jumia.com.eg/catalog/?q=${sku}`, { cache: 'no-store', credentials: 'include' });
+        const res = await fetch(`https://www.jumia.com.eg/catalog/?q=${sku}`, { cache: 'no-store' });
         const html = await res.text();
         const skuUpper = sku.toUpperCase();
         const idx = html.indexOf(`data-sku="${skuUpper}"`);
@@ -254,7 +254,16 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     bulkEntryIdsRef.current = ids;
     setBulkProgress({ total: newEntries.length, loaded: 0 });
     await new Promise(r => setTimeout(r, 3000));
-    newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 1500));
+    // Batch + pause: 20 SKUs per batch, 30s pause between batches
+    const BATCH_SIZE = 20;
+    const SKU_DELAY = 1500;
+    const BATCH_PAUSE = 30000;
+    newEntries.forEach((entry, i) => {
+      const batch = Math.floor(i / BATCH_SIZE);
+      const posInBatch = i % BATCH_SIZE;
+      const delay = batch * (BATCH_SIZE * SKU_DELAY + BATCH_PAUSE) + posInBatch * SKU_DELAY;
+      setTimeout(() => handleSkuChange(entry.id, entry.sku), delay);
+    });
   };
 
   const handleSubmit = async () => {
