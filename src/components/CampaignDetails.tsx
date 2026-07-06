@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  ArrowLeft, CheckCircle2, XCircle, Info, UploadCloud, Plus, Tag, 
+  ArrowLeft, CheckCircle2, XCircle, Info, UploadCloud, Plus, Tag, ExternalLink, 
   Calendar as CalendarIcon, Package, Search, Zap, Clock, Gift, Heart, 
   Sun, Wallet, Sparkles, Cake, Shirt, Smartphone, Tablet, Laptop, 
   Gamepad2, Tv, Microwave, WashingMachine, Refrigerator, Headphones, 
@@ -208,6 +208,18 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
   };
 
   const allValid = entries.filter(e => e.sku).length > 0 && entries.filter(e => e.sku).every(e => e.validation?.valid);
+  const [bulkProgress, setBulkProgress] = useState<{total: number, loaded: number} | null>(null);
+  const bulkEntryIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!bulkProgress) return;
+    const loaded = entries.filter(e =>
+      bulkEntryIdsRef.current.has(e.id) && !e.loading && (e.product || e.error)
+    ).length;
+    if (loaded !== bulkProgress.loaded) {
+      setBulkProgress(prev => prev ? { ...prev, loaded } : null);
+    }
+  }, [entries]);
 
   const loadXLSX = (): Promise<any> => new Promise(resolve => {
     if ((window as any).XLSX) { resolve((window as any).XLSX); return; }
@@ -238,6 +250,9 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     const newEntries = skus.map(sku => ({ id: Math.random().toString(), sku, newPrice: '', newStock: '', loading: false }));
     setEntries([...newEntries, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }]);
     // Stagger requests 200ms apart to avoid Cloudflare rate limiting
+    const ids = new Set(newEntries.map((e: any) => e.id));
+    bulkEntryIdsRef.current = ids;
+    setBulkProgress({ total: newEntries.length, loaded: 0 });
     newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 1000));
   };
 
@@ -504,6 +519,17 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                {entries.filter(e => e.validation && !e.validation.valid).length} Errors
              </div>
+             {bulkProgress && (
+               bulkProgress.loaded >= bulkProgress.total
+                 ? <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg border border-green-300 text-xs font-bold">
+                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                     ✓ Finished
+                   </div>
+                 : <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 text-xs font-bold">
+                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                     {bulkProgress.loaded} of {bulkProgress.total} Loading
+                   </div>
+             )}
            </div>
         </div>
 
@@ -730,10 +756,15 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             <p className="text-[10px] font-black text-slate-400 hidden sm:block tracking-wider uppercase bg-slate-100 px-2 py-1 rounded">
               TIP: PRESS ENTER TO AUTO-ADD NEXT ROW
             </p>
-            <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mr-auto">
-              <span>⚠️</span>
-              <span>Before uploading a sheet, open <a href="https://www.jumia.com.eg" target="_blank" rel="noreferrer" className="font-bold underline">www.jumia.com.eg</a> in a new tab first, then come back and upload.</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => window.open('https://www.jumia.com.eg', '_blank')}
+              className="px-4 py-1.5 bg-slate-50 hover:bg-green-50 text-slate-600 hover:text-green-700 border border-slate-200 hover:border-green-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
+              title="Open Jumia in a new tab to activate product lookup"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Connect to Jumia</span>
+            </button>
                       <button
               onClick={() => setEntries(prev => [...prev, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }])}
               className="px-4 py-1.5 bg-slate-50 hover:bg-orange-50 text-slate-600 hover:text-orange-600 border border-slate-200 hover:border-orange-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
