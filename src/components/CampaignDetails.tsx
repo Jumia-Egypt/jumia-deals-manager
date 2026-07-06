@@ -238,7 +238,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     const newEntries = skus.map(sku => ({ id: Math.random().toString(), sku, newPrice: '', newStock: '', loading: false }));
     setEntries([...newEntries, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }]);
     // Stagger requests 200ms apart to avoid Cloudflare rate limiting
-    newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 500));
+    newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 1000));
   };
 
   const handleSubmit = async () => {
@@ -730,7 +730,11 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             <p className="text-[10px] font-black text-slate-400 hidden sm:block tracking-wider uppercase bg-slate-100 px-2 py-1 rounded">
               TIP: PRESS ENTER TO AUTO-ADD NEXT ROW
             </p>
-            <button
+            <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mr-auto">
+              <span>⚠️</span>
+              <span>Before uploading a sheet, open <a href="https://www.jumia.com.eg" target="_blank" rel="noreferrer" className="font-bold underline">www.jumia.com.eg</a> in a new tab first, then come back and upload.</span>
+            </div>
+                      <button
               onClick={() => setEntries(prev => [...prev, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }])}
               className="px-4 py-1.5 bg-slate-50 hover:bg-orange-50 text-slate-600 hover:text-orange-600 border border-slate-200 hover:border-orange-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
             >
