@@ -135,24 +135,10 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     
     if (sku.length >= 6) {
       setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: true } : e));
-      try {
-        const res = await fetch(`https://www.jumia.com.eg/catalog/?q=${sku}`, { cache: 'no-store' });
-        const html = await res.text();
-        const skuUpper = sku.toUpperCase();
-        const idx = html.indexOf(`data-sku="${skuUpper}"`);
-        if (idx === -1) {
-          setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: false, error: 'SKU not found on Jumia Egypt. Please check and try again.' } : e));
-          return;
-        }
-        const chunk = html.slice(idx, idx + 4000);
-        const name = (chunk.match(/<h3 class="name">([^<]+)<\/h3>/) || [])[1] || sku;
-        const image = ((chunk.match(/data-src="([^"]+)"/) || [])[1] || '').replace('/300x300/', '/500x500/');
-        const priceRaw = (chunk.match(/<div class="prc">EGP ([\d,]+\.?[\d]*)/) || [])[1] || '0';
-        const livePrice = parseFloat(priceRaw.replace(/,/g, ''));
-        const oldPriceRaw = (chunk.match(/<div class="old">EGP ([\d,]+\.?[\d]*)/) || [])[1];
-        const bestPrice = oldPriceRaw ? parseFloat(oldPriceRaw.replace(/,/g, '')) : livePrice;
-        const brand = name.split(' ')[0];
-        const product = { sku, name, brand, category: 'General', image, livePrice, bestPrice };
+            try {
+        const apiRes = await fetch(`/api/products/${encodeURIComponent(sku)}`);
+        if (!apiRes.ok) throw new Error('Product not found');
+        const { name = sku, brand = '', category = 'General', livePrice = 0, bestPrice = 0, image = '' } = await apiRes.json();
         setEntries(prev => prev.map(e => e.id === id ? { ...e, product, loading: false } : e));
       } catch (err) {
         setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: false, error: 'Failed to fetch product. Please try again.' } : e));
@@ -252,18 +238,16 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     if (skus.length === 0) return;
     const newEntries = skus.map(sku => ({ id: Math.random().toString(), sku, newPrice: '', newStock: '', loading: false }));
     setEntries([...newEntries, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }]);
-    // Wait 3s for Jumia tab to load (Cloudflare clearance), then start fetching
     const ids = new Set(newEntries.map((e: any) => e.id));
     bulkEntryIdsRef.current = ids;
     setBulkProgress({ total: newEntries.length, loaded: 0 });
     setElapsedSeconds(0);
     if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     elapsedIntervalRef.current = setInterval(() => setElapsedSeconds(s => (s ?? 0) + 1), 1000);
-    await new Promise(r => setTimeout(r, 3000));
     // Batch + pause with live countdown status
-    const BATCH_SIZE = 20;
-    const SKU_DELAY = 800;
-    const PAUSE_SECS = 60;
+    const BATCH_SIZE = 50;
+    const SKU_DELAY = 300;
+    const PAUSE_SECS = 5;
     const totalBatches = Math.ceil(newEntries.length / BATCH_SIZE);
     (async () => {
       for (let b = 0; b < totalBatches; b++) {
@@ -810,10 +794,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             </button>
             <button
               type="button"
-              onClick={() => {
-                window.open('https://www.jumia.com.eg', '_blank', 'noopener,noreferrer');
-                setTimeout(() => fileInputRef.current?.click(), 200);
-              }}
+              onClick={() => fileInputRef.current?.click()}
               className="px-4 py-1.5 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
             >
               <UploadCloud className="w-3.5 h-3.5" />
