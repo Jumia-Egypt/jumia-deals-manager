@@ -8,48 +8,30 @@ interface LoginProps {
 export function Login({ onLogin }: LoginProps) {
   const [role, setRole] = useState<'admin' | 'vendor'>('vendor');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (role === 'admin') {
-      if (email === 'george.ayman@jumia.com' && password === 'admin123') {
-        onLogin('admin', 'Hello George');
-      } else {
-        setError('Invalid admin credentials');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Invalid email or password');
+        return;
       }
-    } else {
-      if (email === 'george.ayman@jumia.com') {
-        setError('Please use the Admin login tab for this email.');
-      } else if (email && password) {
-        // Read from vendorsData in localStorage
-        const saved = localStorage.getItem('vendorsData');
-        const defaultVendors = [
-          {
-            id: '884920',
-            name: 'Tech Store Egypt',
-            email: 'tech@vendor.com',
-            password: 'password123',
-          },
-          {
-            id: '884921',
-            name: 'Fashion Hub',
-            email: 'fashion@vendor.com',
-            password: 'password123',
-          }
-        ];
-        const vendors = saved ? JSON.parse(saved) : defaultVendors;
-        const matchedVendor = vendors.find((v: any) => v.email?.toLowerCase() === email.trim().toLowerCase() && v.password === password);
-        
-        if (matchedVendor) {
-          onLogin('vendor', matchedVendor.name, matchedVendor.id);
-        } else {
-          setError('Invalid vendor email or password.');
-        }
-      }
+      onLogin(data.role as 'admin' | 'vendor', data.name, data.id);
+    } catch {
+      setError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
