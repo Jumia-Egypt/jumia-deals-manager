@@ -257,7 +257,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     await new Promise(r => setTimeout(r, 3000));
     // Batch + pause with live countdown status
     const BATCH_SIZE = 20;
-    const SKU_DELAY = 1500;
+    const SKU_DELAY = 500;
     const PAUSE_SECS = 60;
     const totalBatches = Math.ceil(newEntries.length / BATCH_SIZE);
     (async () => {
