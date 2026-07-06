@@ -238,7 +238,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     const newEntries = skus.map(sku => ({ id: Math.random().toString(), sku, newPrice: '', newStock: '', loading: false }));
     setEntries([...newEntries, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }]);
     // Stagger requests 200ms apart to avoid Cloudflare rate limiting
-    newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 200));
+    newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 500));
   };
 
   const handleSubmit = async () => {
