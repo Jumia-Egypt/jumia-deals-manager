@@ -10,10 +10,12 @@ module.exports = async function handler(req, res) {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
+  const normalizedEmail = email.toLowerCase().trim();
+
   const { data, error } = await supabase
     .from('users')
     .select('id, name, email, role, password')
-    .eq('email', email.toLowerCase().trim())
+    .ilike('email', normalizedEmail)
     .single();
 
   if (error || !data) return res.status(401).json({ error: 'Invalid email or password' });
