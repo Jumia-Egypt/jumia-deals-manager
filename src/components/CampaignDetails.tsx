@@ -249,11 +249,12 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     if (skus.length === 0) return;
     const newEntries = skus.map(sku => ({ id: Math.random().toString(), sku, newPrice: '', newStock: '', loading: false }));
     setEntries([...newEntries, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }]);
-    // Stagger requests 200ms apart to avoid Cloudflare rate limiting
+    // Wait 3s for Jumia tab to load (Cloudflare clearance), then start fetching
     const ids = new Set(newEntries.map((e: any) => e.id));
     bulkEntryIdsRef.current = ids;
     setBulkProgress({ total: newEntries.length, loaded: 0 });
-    newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 1000));
+    await new Promise(r => setTimeout(r, 3000));
+    newEntries.forEach((entry, i) => setTimeout(() => handleSkuChange(entry.id, entry.sku), i * 1500));
   };
 
   const handleSubmit = async () => {
@@ -756,15 +757,16 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             <p className="text-[10px] font-black text-slate-400 hidden sm:block tracking-wider uppercase bg-slate-100 px-2 py-1 rounded">
               TIP: PRESS ENTER TO AUTO-ADD NEXT ROW
             </p>
-            <button
-              type="button"
-              onClick={() => window.open('https://www.jumia.com.eg', '_blank')}
+            <a
+              href="https://www.jumia.com.eg"
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-4 py-1.5 bg-slate-50 hover:bg-green-50 text-slate-600 hover:text-green-700 border border-slate-200 hover:border-green-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
               title="Open Jumia in a new tab to activate product lookup"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Connect to Jumia</span>
-            </button>
+            </a>
                       <button
               onClick={() => setEntries(prev => [...prev, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }])}
               className="px-4 py-1.5 bg-slate-50 hover:bg-orange-50 text-slate-600 hover:text-orange-600 border border-slate-200 hover:border-orange-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
@@ -774,7 +776,10 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             </button>
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                window.open('https://www.jumia.com.eg', '_blank', 'noopener,noreferrer');
+                setTimeout(() => fileInputRef.current?.click(), 200);
+              }}
               className="px-4 py-1.5 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
             >
               <UploadCloud className="w-3.5 h-3.5" />
