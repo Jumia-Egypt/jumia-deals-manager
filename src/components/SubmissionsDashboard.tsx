@@ -180,7 +180,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
   };
 
   const handleDeleteAllSubmissions = async () => {
-    if (!window.confirm('ÃÂ¢ÃÂÃÂ ÃÂ¯ÃÂ¸ÃÂ Delete ALL submissions from the database? This cannot be undone.')) return;
+    if (!window.confirm('ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ ÃÂÃÂ¯ÃÂÃÂ¸ÃÂÃÂ Delete ALL submissions from the database? This cannot be undone.')) return;
     try {
       const res = await fetch('/api/submissions', { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
@@ -447,7 +447,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
                             <User className="w-3.5 h-3.5 text-slate-400" />
                             Vendor: <strong className="text-slate-700 font-bold">{sub.vendorName} (ID: {sub.vendorId})</strong>
                           </span>
-                          <span className="hidden sm:inline text-slate-300">ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢</span>
+                          <span className="hidden sm:inline text-slate-300"> &middot; </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             Submitted: <strong className="text-slate-700 font-bold">{new Date(sub.timestamp).toLocaleString()}</strong>
