@@ -136,7 +136,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     if (sku.length >= 6) {
       setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: true } : e));
       try {
-        const res = await fetch(`https://www.jumia.com.eg/catalog/?q=${sku}`);
+        const res = await fetch(`https://www.jumia.com.eg/catalog/?q=${sku}`, { cache: 'no-store', credentials: 'include' });
         const html = await res.text();
         const skuUpper = sku.toUpperCase();
         const idx = html.indexOf(`data-sku="${skuUpper}"`);
