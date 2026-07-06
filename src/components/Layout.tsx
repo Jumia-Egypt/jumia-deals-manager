@@ -21,8 +21,8 @@ export function Layout({ children, activeTab = 'calendar', onNavigate, onLogout,
     menuItems = [
       { id: 'admin', label: 'Campaign Management', icon: Settings },
       { id: 'calendar', label: 'Campaign Calendar', icon: Calendar },
-      { id: 'vendor-management', label: 'Vendor Management', icon: Users },
-      { id: 'submissions', label: 'Vendors\' Submissions', icon: Tag }
+      { id: 'submissions', label: 'Vendors\' Submissions', icon: Tag },
+      { id: 'vendor-management', label: 'Account Management', icon: Users }
     ];
   } else {
     menuItems = [
