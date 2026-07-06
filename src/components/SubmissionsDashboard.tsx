@@ -37,6 +37,7 @@ interface SubmissionsDashboardProps {
 export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboardProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirmSubId, setDeleteConfirmSubId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
@@ -161,19 +162,25 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
     document.body.removeChild(link);
   };
 
-  const handleDeleteSubmission = async (subId: string) => {
-    if (!window.confirm('Delete this submission? This cannot be undone.')) return;
+  const handleDeleteSubmission = (subId: string) => {
+    setDeleteConfirmSubId(subId);
+  };
+
+  const confirmDeleteSubmission = async () => {
+    if (!deleteConfirmSubId) return;
     try {
-      const res = await fetch(`/api/submissions/${subId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/submissions/${deleteConfirmSubId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
-      setSubmissions(prev => prev.filter(s => s.id !== subId));
+      setSubmissions(prev => prev.filter(s => s.id !== deleteConfirmSubId));
     } catch (err) {
       console.error('Delete submission failed:', err);
+    } finally {
+      setDeleteConfirmSubId(null);
     }
   };
 
   const handleDeleteAllSubmissions = async () => {
-    if (!window.confirm('Ã¢ÂÂ Ã¯Â¸Â Delete ALL submissions from the database? This cannot be undone.')) return;
+    if (!window.confirm('ÃÂ¢ÃÂÃÂ ÃÂ¯ÃÂ¸ÃÂ Delete ALL submissions from the database? This cannot be undone.')) return;
     try {
       const res = await fetch('/api/submissions', { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
@@ -440,7 +447,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
                             <User className="w-3.5 h-3.5 text-slate-400" />
                             Vendor: <strong className="text-slate-700 font-bold">{sub.vendorName} (ID: {sub.vendorId})</strong>
                           </span>
-                          <span className="hidden sm:inline text-slate-300">ÃÂ¢ÃÂÃÂ¢</span>
+                          <span className="hidden sm:inline text-slate-300">ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             Submitted: <strong className="text-slate-700 font-bold">{new Date(sub.timestamp).toLocaleString()}</strong>
@@ -636,6 +643,39 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
           </AnimatePresence>
         </div>
       )}
+      {/* Delete Submission Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmSubId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white rounded-2xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col p-6"
+            >
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Submission</h3>
+              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                Are you sure you want to delete this submission? This action cannot be undone and will permanently remove all associated details.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setDeleteConfirmSubId(null)}
+                  className="px-4 py-2 border border-slate-200 rounded-lg font-medium text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteSubmission}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition-colors shadow-sm shadow-red-500/10"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
