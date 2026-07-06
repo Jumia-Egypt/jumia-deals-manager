@@ -50,5 +50,14 @@ module.exports = async function handler(req, res) {
     return res.json({ success: true, submissionId, timestamp: new Date().toISOString(), message: 'Prices submitted successfully!' });
   }
 
+  if (req.method === 'DELETE') {
+    const { error } = await supabase
+      .from('submissions_v2')
+      .delete()
+      .neq('id', 'no-match');
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    return res.json({ success: true, message: 'All submissions deleted' });
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 };
