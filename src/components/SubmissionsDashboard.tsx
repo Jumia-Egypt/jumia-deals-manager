@@ -161,6 +161,17 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
     document.body.removeChild(link);
   };
 
+  const handleDeleteAllSubmissions = async () => {
+    if (!window.confirm('⚠️ Delete ALL submissions from the database? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/submissions', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      setSubmissions([]);
+    } catch (err) {
+      console.error('Delete all failed:', err);
+    }
+  };
+
   const handleDownloadAll = (subsList: Submission[]) => {
     if (subsList.length === 0) return;
     
@@ -277,6 +288,12 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download All (CSV)</span>
+            </button>
+            <button
+              onClick={handleDeleteAllSubmissions}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+            >
+              🗑 <span>Delete All</span>
             </button>
           )}
           <button 
@@ -426,7 +443,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
                             <User className="w-3.5 h-3.5 text-slate-400" />
                             Vendor: <strong className="text-slate-700 font-bold">{sub.vendorName} (ID: {sub.vendorId})</strong>
                           </span>
-                          <span className="hidden sm:inline text-slate-300">•</span>
+                          <span className="hidden sm:inline text-slate-300">â¢</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             Submitted: <strong className="text-slate-700 font-bold">{new Date(sub.timestamp).toLocaleString()}</strong>
