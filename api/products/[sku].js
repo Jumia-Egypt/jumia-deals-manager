@@ -1,9 +1,3 @@
-const CATALOG = {
-  "123456EG": { sku: "123456EG", name: "Samsung Galaxy S24 Ultra 256GB - Titanium Black", brand: "Samsung", category: "Phones", sellerSku: "SAM-S24U-256", image: "https://images.unsplash.com/photo-1707227155609-0820bb291a26?w=400&q=80", livePrice: 45000, bestPrice: 41500, priceBeforeDiscount: 48000, currentDiscount: 6.25, stock: 120, minMargin: 40000 },
-  "789012EG": { sku: "789012EG", name: "Apple AirPods Pro (2nd generation)", brand: "Apple", category: "Phones accessories", sellerSku: "APP-AIR-PRO2", image: "https://images.unsplash.com/photo-1606220588913-b3aecb4b277c?w=400&q=80", livePrice: 12000, bestPrice: 10900, priceBeforeDiscount: 14000, currentDiscount: 14.28, stock: 45, minMargin: 10500 },
-  "456789EG": { sku: "456789EG", name: "Nike Air Max 270 - Men's Sneaker", brand: "Nike", category: "Fashion", sellerSku: "NK-AM270-M-42", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80", livePrice: 5500, bestPrice: 4800, priceBeforeDiscount: 7000, currentDiscount: 21.4, stock: 200, minMargin: 4500 }
-};
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -12,6 +6,51 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { sku } = req.query;
-  const product = CATALOG[sku] || { sku, name: "Mobile Phone", brand: "Generic", category: "Phones", sellerSku: "GEN-MOB-PHN", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80", livePrice: 10000, bestPrice: 8900, priceBeforeDiscount: 12000, currentDiscount: 16.67, stock: 100, minMargin: 5000 };
-  return res.json(product);
+  if (!sku) return res.status(400).json({ error: 'SKU is required' });
+
+  try {
+    const url = `https://www.jumia.com.eg/catalog/?q=${encodeURIComponent(sku)}`;
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+      }
+    });
+
+    if (!resp.ok) {
+      return res.status(502).json({ error: `Jumia catalog returned ${resp.status}` });
+    }
+
+    const html = await resp.text();
+
+    const ldMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    if (!ldMatch) return res.status(404).json({ error: 'Product not found' });
+
+    let imageUrl = '', livePrice = 0;
+    try {
+      const ld = JSON.parse(ldMatch[1]);
+      const collection = (ld['@graph'] || []).find(n => n['@type'] === 'CollectionPage');
+      const items = collection?.mainEntity?.itemListElement || [];
+      if (items.length === 0) return res.status(404).json({ error: 'SKU not found on Jumia Egypt' });
+      const item = items[0].item;
+      imageUrl = (item.image || '').replace('/300x300/', '/500x500/');
+      livePrice = parseFloat(item.offers?.price || '0');
+    } catch (e) {
+      return res.status(404).json({ error: 'Could not parse product data from Jumia' });
+    }
+
+    const nameMatch = html.match(/class="name">([^<]+)</);
+    const name = nameMatch ? nameMatch[1].trim() : sku;
+    const brand = name.split(' ')[0] || 'Unknown';
+    const breadcrumbMatch = html.match(/"BreadcrumbList"[\s\S]*?"name":"([^"]+)","position":2/);
+    const category = breadcrumbMatch ? breadcrumbMatch[1] : 'General';
+
+    return res.json({ sku, name, brand, category, image: imageUrl, livePrice, bestPrice: livePrice });
+
+  } catch (err) {
+    console.error('[products] error:', err.message);
+    return res.status(500).json({ error: 'Failed to fetch product details from Jumia Egypt' });
+  }
 };
