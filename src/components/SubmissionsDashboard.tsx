@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, XCircle, Clock, Download, Search, Filter, 
-  ChevronDown, ChevronUp, ArrowUpRight, ShieldCheck, Tag, ShoppingBag, Eye, Calendar, User
+  ChevronDown, ChevronUp, ArrowUpRight, ShieldCheck, Tag, ShoppingBag, Eye, Calendar, User, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -161,8 +161,19 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
     document.body.removeChild(link);
   };
 
+  const handleDeleteSubmission = async (subId: string) => {
+    if (!window.confirm('Delete this submission? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/submissions/${subId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      setSubmissions(prev => prev.filter(s => s.id !== subId));
+    } catch (err) {
+      console.error('Delete submission failed:', err);
+    }
+  };
+
   const handleDeleteAllSubmissions = async () => {
-    if (!window.confirm('â ï¸ Delete ALL submissions from the database? This cannot be undone.')) return;
+    if (!window.confirm('Ã¢ÂÂ Ã¯Â¸Â Delete ALL submissions from the database? This cannot be undone.')) return;
     try {
       const res = await fetch('/api/submissions', { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
@@ -281,23 +292,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
-          {userRole === 'admin' && filteredSubmissions.length > 0 && (
-            <>
-            <button
-              onClick={() => handleDownloadAll(filteredSubmissions)}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-orange-500/15 flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download All (CSV)</span>
-            </button>
-            <button
-              onClick={handleDeleteAllSubmissions}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
-            >
-              ð <span>Delete All</span>
-            </button>
-            </>
-          )}
+          
           <button 
             onClick={fetchSubmissions}
             className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-bold transition-all"
@@ -445,7 +440,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
                             <User className="w-3.5 h-3.5 text-slate-400" />
                             Vendor: <strong className="text-slate-700 font-bold">{sub.vendorName} (ID: {sub.vendorId})</strong>
                           </span>
-                          <span className="hidden sm:inline text-slate-300">Ã¢ÂÂ¢</span>
+                          <span className="hidden sm:inline text-slate-300">ÃÂ¢ÃÂÃÂ¢</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             Submitted: <strong className="text-slate-700 font-bold">{new Date(sub.timestamp).toLocaleString()}</strong>
@@ -517,6 +512,15 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
                             title="Download Submission CSV"
                           >
                             <Download className="w-4 h-4" />
+                          </button>
+                        )}
+                        {userRole === 'admin' && (
+                          <button
+                            onClick={() => handleDeleteSubmission(sub.id)}
+                            className="p-2 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl border border-red-200 transition-colors"
+                            title="Delete Submission"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         )}
                       </div>
