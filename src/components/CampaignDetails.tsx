@@ -210,6 +210,8 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
   const allValid = entries.filter(e => e.sku).length > 0 && entries.filter(e => e.sku).every(e => e.validation?.valid);
   const [bulkProgress, setBulkProgress] = useState<{total: number, loaded: number} | null>(null);
   const [batchStatus, setBatchStatus] = useState<{type: 'loading'|'pausing', batch: number, total: number, countdown?: number} | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bulkEntryIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -254,11 +256,14 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     const ids = new Set(newEntries.map((e: any) => e.id));
     bulkEntryIdsRef.current = ids;
     setBulkProgress({ total: newEntries.length, loaded: 0 });
+    setElapsedSeconds(0);
+    if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
+    elapsedIntervalRef.current = setInterval(() => setElapsedSeconds(s => (s ?? 0) + 1), 1000);
     await new Promise(r => setTimeout(r, 3000));
     // Batch + pause with live countdown status
     const BATCH_SIZE = 20;
-    const SKU_DELAY = 500;
-    const PAUSE_SECS = 40;
+    const SKU_DELAY = 800;
+    const PAUSE_SECS = 60;
     const totalBatches = Math.ceil(newEntries.length / BATCH_SIZE);
     (async () => {
       for (let b = 0; b < totalBatches; b++) {
@@ -274,6 +279,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
         }
       }
       setBatchStatus(null);
+      if (elapsedIntervalRef.current) { clearInterval(elapsedIntervalRef.current); elapsedIntervalRef.current = null; }
     })();
   };
 
@@ -552,6 +558,11 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                    </div>
              )}
            </div>
+           {elapsedSeconds !== null && (
+             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg text-xs font-bold">
+               ⏱ {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}
+             </div>
+           )}
            {batchStatus && (
              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold ${
                batchStatus.type === 'pausing'
