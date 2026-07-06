@@ -18,11 +18,23 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST') {
     const { name, email, password, role } = req.body || {};
     if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
-    const { data: existing } = await supabase.from('users').select('id').eq('email', email.toLowerCase().trim()).maybeSingle();
+
+    // Check duplicate email
+    const { data: existing } = await supabase
+      .from('users').select('id').eq('email', email.toLowerCase().trim()).maybeSingle();
     if (existing) return res.status(409).json({ error: 'A user with this email already exists' });
-    const { data, error } = await supabase.from('users')
-      .insert([{ name: name.trim(), email: email.toLowerCase().trim(), password, role: (role || 'VENDOR').toUpperCase() }])
-      .select('id, name, email, role, created_at').single();
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password,
+        role: (role || 'VENDOR').toUpperCase()
+      }])
+      .select('id, name, email, role, created_at')
+      .single();
+
     if (error) return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
   }
