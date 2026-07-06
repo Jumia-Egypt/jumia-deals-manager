@@ -222,20 +222,28 @@ export function VendorManagement() {
 
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
 
-  // Sync vendors from Supabase on mount (for cross-browser login support)
+  // Sync from Supabase on mount — Supabase is source of truth for who exists
   useEffect(() => {
     fetch('/api/vendors')
       .then(r => r.json())
-      .then(apiVendors => {
-        if (!Array.isArray(apiVendors)) return;
-        setVendors(prev => {
-          const merged = [...prev];
-          apiVendors.forEach((av: any) => {
-            if (!merged.find(v => v.email?.toLowerCase() === av.email?.toLowerCase())) {
-              merged.push({ ...av, email: av.email?.toLowerCase(), targetGMV: 200000, achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [] });
-            }
+      .then(apiUsers => {
+        if (!Array.isArray(apiUsers)) return;
+        setVendors((prev: any) => {
+          return apiUsers.map((av: any) => {
+            const local = prev.find((l: any) =>
+              l.id === av.id || l.email?.toLowerCase() === av.email?.toLowerCase()
+            );
+            return {
+              achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [],
+              ...(local || {}),
+              id: av.id,
+              name: av.name,
+              email: av.email?.toLowerCase(),
+              role: av.role,
+              password: av.password,
+              targetGMV: local?.targetGMV ?? (av.target_gmv || 200000),
+            };
           });
-          return merged;
         });
       })
       .catch(() => {});
@@ -282,6 +290,7 @@ export function VendorManagement() {
 
   const handleConfirmDeleteVendor = () => {
     if (vendorToDeleteId) {
+      fetch(`/api/vendors?id=${vendorToDeleteId}`, { method: 'DELETE' }).catch(() => {});
       setVendors(vendors.filter((v: any) => v.id !== vendorToDeleteId));
       if (selectedVendorId === vendorToDeleteId) {
         setSelectedVendorId(null);
@@ -321,6 +330,12 @@ export function VendorManagement() {
       setEditProfileError('A vendor account with this email address already exists.');
       return;
     }
+
+    fetch(`/api/vendors/${vendorId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: nameClean, email: emailClean, password: passwordClean })
+    }).catch(() => {});
 
     setVendors(vendors.map(v => v.id === vendorId ? {
       ...v,
@@ -478,7 +493,7 @@ export function VendorManagement() {
 
   const selectedVendor = vendors.find(v => v.id === selectedVendorId);
 
-  const handleAddVendor = (e: React.FormEvent) => {
+  const handleAddVendor = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddVendorError('');
 
@@ -491,34 +506,38 @@ export function VendorManagement() {
       return;
     }
 
-    const emailExists = vendors.some((v: any) => v.email?.toLowerCase() === emailClean.toLowerCase());
+    const emailExists = vendors.some((v: any) => v.email?.toLowerCase() === emailClean);
     if (emailExists) {
       setAddVendorError('A vendor account with this email address already exists.');
       return;
     }
 
-    const newVendorId = Math.floor(100000 + Math.random() * 900000).toString();
-    const newVendor = {
-      id: newVendorId,
-      name: nameClean,
-      email: emailClean,
-      password: passwordClean,
-      targetGMV: Number(newVendorTarget) || 200000,
-      achievementGMV: 0,
-      countOfOrders: 0,
-      grossItemSold: 0,
-      dailyData: []
-    };
+    try {
+      const apiRes = await fetch('/api/vendors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameClean, email: emailClean, password: passwordClean, target_gmv: Number(newVendorTarget) || 200000 })
+      });
+      const saved = await apiRes.json();
+      if (!apiRes.ok) { setAddVendorError(saved.error || 'Failed to create vendor'); return; }
 
-    // Save to Supabase so vendor can log in from any browser
-    fetch('/api/vendors', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: nameClean, email: emailClean, password: passwordClean })
-    }).catch(() => {});
-    setVendors([...vendors, newVendor]);
-    
-    // Reset states
+      setVendors((prev: any) => [...prev, {
+        id: saved.id,
+        name: saved.name,
+        email: saved.email,
+        password: passwordClean,
+        role: 'VENDOR',
+        targetGMV: Number(newVendorTarget) || 200000,
+        achievementGMV: 0,
+        countOfOrders: 0,
+        grossItemSold: 0,
+        dailyData: []
+      }]);
+    } catch {
+      setAddVendorError('Connection error. Please try again.');
+      return;
+    }
+
     setNewVendorName('');
     setNewVendorEmail('');
     setNewVendorPassword('');
@@ -526,7 +545,7 @@ export function VendorManagement() {
     setIsAddingVendor(false);
   };
 
-  const handleAddAdmin = (e: React.FormEvent) => {
+  const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddAdminError('');
     const nameClean = newAdminName.trim();
@@ -541,12 +560,19 @@ export function VendorManagement() {
       setAddAdminError('An account with this email already exists.');
       return;
     }
-    fetch('/api/vendors', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: nameClean, email: emailClean, password: passwordClean, role: 'ADMIN' })
-    }).catch(() => {});
-    setVendors((prev: any) => [...prev, { id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(), name: nameClean, email: emailClean, password: passwordClean, role: 'ADMIN', targetGMV: 0, achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [] }]);
+    try {
+      const apiRes = await fetch('/api/vendors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameClean, email: emailClean, password: passwordClean, role: 'ADMIN' })
+      });
+      const saved = await apiRes.json();
+      if (!apiRes.ok) { setAddAdminError(saved.error || 'Failed to create admin'); return; }
+      setVendors((prev: any) => [...prev, { id: saved.id, name: saved.name, email: saved.email, password: passwordClean, role: 'ADMIN', targetGMV: 0, achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [] }]);
+    } catch {
+      setAddAdminError('Connection error. Please try again.');
+      return;
+    }
     setNewAdminName('');
     setNewAdminEmail('');
     setNewAdminPassword('');
