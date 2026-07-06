@@ -120,9 +120,18 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Debounced SKU fetch
   const handleSkuChange = async (id: string, sku: string) => {
-    setEntries(prev => prev.map(e => e.id === id ? { ...e, sku, product: undefined, error: undefined, validation: undefined } : e));
+    setEntries(prev => {
+      const last = prev[prev.length - 1];
+      const mapped = prev.map(e => e.id === id ? { ...e, sku, product: undefined, error: undefined, validation: undefined } : e);
+      if (last?.id === id && last?.sku === '' && sku.length === 1) {
+        return [...mapped, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }];
+      }
+      return mapped;
+    });
     
     if (sku.length >= 6) {
       setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: true } : e));
@@ -199,6 +208,37 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
   };
 
   const allValid = entries.filter(e => e.sku).length > 0 && entries.filter(e => e.sku).every(e => e.validation?.valid);
+
+  const loadXLSX = (): Promise<any> => new Promise(resolve => {
+    if ((window as any).XLSX) { resolve((window as any).XLSX); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+    script.onload = () => resolve((window as any).XLSX);
+    document.head.appendChild(script);
+  });
+
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    let skus: string[] = [];
+    if (ext === 'csv') {
+      const text = await file.text();
+      skus = text.split(/\r?\n/).map(l => l.split(',')[0].trim().replace(/"/g, '').toUpperCase()).filter(s => s.length >= 6);
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      const XLSX = await loadXLSX();
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      skus = rows.map((r: any[]) => String(r[0] || '').trim().toUpperCase()).filter((s: string) => s.length >= 6);
+    }
+    if (skus.length === 0) return;
+    const newEntries = skus.map(sku => ({ id: Math.random().toString(), sku, newPrice: '', newStock: '', loading: false }));
+    setEntries([...newEntries, { id: Math.random().toString(), sku: '', newPrice: '', newStock: '', loading: false }]);
+    newEntries.forEach(entry => handleSkuChange(entry.id, entry.sku));
+  };
 
   const handleSubmit = async () => {
     if (!allValid) return;
@@ -696,6 +736,15 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
               <Plus className="w-3.5 h-3.5" />
               <span>Add Row</span>
             </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-1.5 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>Upload Sheet</span>
+            </button>
+            <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleBulkUpload} />
           </div>
           <button
             onClick={() => setIsReviewing(true)}
