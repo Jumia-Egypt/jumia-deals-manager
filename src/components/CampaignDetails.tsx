@@ -400,7 +400,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                   </div>
                   <div className="flex-1 min-w-0 text-center sm:text-left">
                     <h4 className="text-sm font-black text-slate-800 truncate">{entry.product.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{entry.sku} â¢ {entry.product.brand}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{entry.sku} · {entry.product.brand}</p>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-x-6 gap-y-1 text-center sm:text-right shrink-0">
@@ -533,7 +533,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                        </div>
                        <div className="truncate flex-1">
                          <p className="text-[10px] font-bold truncate text-slate-800 leading-tight" title={entry.product.name}>{entry.product.name}</p>
-                         <p className="text-[8px] text-slate-400 uppercase font-semibold mt-0.5 truncate">{entry.product.category} â¢ {entry.product.brand}</p>
+                         <p className="text-[8px] text-slate-400 uppercase font-semibold mt-0.5 truncate">{entry.product.brand}</p>
                        </div>
                      </div>
                    ) : (
@@ -745,7 +745,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-extrabold text-slate-800 truncate">{selectedError.product.name}</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">{selectedError.product.category} â¢ {selectedError.product.brand}</p>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">{selectedError.product.category} Ã¢ÂÂ¢ {selectedError.product.brand}</p>
                     <p className="text-[11px] font-bold text-slate-500 mt-1">Current Price: <span className="text-slate-700 font-black">{selectedError.product.livePrice.toLocaleString()} EGP</span></p>
                   </div>
                 </div>
@@ -772,7 +772,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                     {selectedError.validation?.error ? (
                       selectedError.validation.error.split(" AND ").map((errStr, idx) => (
                         <li key={idx} className="text-xs text-red-700 font-bold flex items-start gap-1.5 leading-relaxed">
-                          <span className="text-red-500 mt-1 shrink-0">â¢</span>
+                          <span className="text-red-500 mt-1 shrink-0">Ã¢ÂÂ¢</span>
                           <span>{errStr}</span>
                         </li>
                       ))
