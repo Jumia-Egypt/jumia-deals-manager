@@ -122,7 +122,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
 
   // Debounced SKU fetch
   const handleSkuChange = async (id: string, sku: string) => {
-    setEntries(prev => prev.map(e => e.id === id ? { ...e, sku, error: undefined, validation: undefined } : e));
+    setEntries(prev => prev.map(e => e.id === id ? { ...e, sku, product: undefined, error: undefined, validation: undefined } : e));
     
     if (sku.length >= 6) {
       setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: true } : e));
@@ -584,7 +584,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                  {/* Promo Stock */}
                  <div className="col-span-1 p-2 h-full border-r border-slate-100 flex items-center justify-center text-center bg-orange-50/10">
                    {entry.product ? (
-                     <div className="relative group w-14 flex items-center justify-center mx-auto">
+                     <div className="relative group w-full flex items-center justify-center">
                         <input
                           type="number"
                           value={entry.newStock}
