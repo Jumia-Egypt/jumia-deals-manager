@@ -162,7 +162,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
   };
 
   const handleDeleteAllSubmissions = async () => {
-    if (!window.confirm('⚠️ Delete ALL submissions from the database? This cannot be undone.')) return;
+    if (!window.confirm('â ï¸ Delete ALL submissions from the database? This cannot be undone.')) return;
     try {
       const res = await fetch('/api/submissions', { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
@@ -282,6 +282,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
         </div>
         <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
           {userRole === 'admin' && filteredSubmissions.length > 0 && (
+            <>
             <button
               onClick={() => handleDownloadAll(filteredSubmissions)}
               className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-orange-500/15 flex items-center gap-1.5"
@@ -293,8 +294,9 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
               onClick={handleDeleteAllSubmissions}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
             >
-              🗑 <span>Delete All</span>
+              ð <span>Delete All</span>
             </button>
+            </>
           )}
           <button 
             onClick={fetchSubmissions}
@@ -443,7 +445,7 @@ export function SubmissionsDashboard({ userRole, vendorId }: SubmissionsDashboar
                             <User className="w-3.5 h-3.5 text-slate-400" />
                             Vendor: <strong className="text-slate-700 font-bold">{sub.vendorName} (ID: {sub.vendorId})</strong>
                           </span>
-                          <span className="hidden sm:inline text-slate-300">â¢</span>
+                          <span className="hidden sm:inline text-slate-300">Ã¢ÂÂ¢</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             Submitted: <strong className="text-slate-700 font-bold">{new Date(sub.timestamp).toLocaleString()}</strong>
