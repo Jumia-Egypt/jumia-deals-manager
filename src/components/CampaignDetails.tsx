@@ -136,9 +136,22 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     if (sku.length >= 6) {
       setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: true } : e));
             try {
-        const apiRes = await fetch(`/api/products/${encodeURIComponent(sku)}`);
-        if (!apiRes.ok) throw new Error('Product not found');
-        const { name = sku, brand = '', category = 'General', livePrice = 0, bestPrice = 0, image = '' } = await apiRes.json();
+        const res = await fetch(`https://www.jumia.com.eg/catalog/?q=${sku}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed to fetch');
+        const html = await res.text();
+        const nameMatch = html.match(/class="name"[^>]*>([^<]+)/i);
+        const priceMatch = html.match(/prc">([^<]+)/i);
+        const oldPriceMatch = html.match(/old">([^<]+)/i);
+        const brandMatch = html.match(/data-brand="([^"]+)"/i);
+        const imageMatch = html.match(/data-src="([^"]+)"/i);
+        const parsePrice = (s?: string) => s ? parseFloat(s.replace(/[^\d.]/g,'')) || 0 : 0;
+        const name = (nameMatch?.[1] || sku).trim();
+        const livePrice = parsePrice(priceMatch?.[1]);
+        const rawBest = parsePrice(oldPriceMatch?.[1]);
+        const bestPrice = rawBest > livePrice ? rawBest : livePrice;
+        const brand = brandMatch?.[1]?.trim() || '';
+        const image = imageMatch?.[1] || '';
+        const category = 'General';
         setEntries(prev => prev.map(e => e.id === id ? { ...e, product, loading: false } : e));
       } catch (err) {
         setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: false, error: 'Failed to fetch product. Please try again.' } : e));
@@ -245,9 +258,9 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     elapsedIntervalRef.current = setInterval(() => setElapsedSeconds(s => (s ?? 0) + 1), 1000);
     // Batch + pause with live countdown status
-    const BATCH_SIZE = 50;
-    const SKU_DELAY = 300;
-    const PAUSE_SECS = 5;
+    const BATCH_SIZE = 20;
+    const SKU_DELAY = 800;
+    const PAUSE_SECS = 60;
     const totalBatches = Math.ceil(newEntries.length / BATCH_SIZE);
     (async () => {
       for (let b = 0; b < totalBatches; b++) {
