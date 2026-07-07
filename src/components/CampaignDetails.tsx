@@ -816,9 +816,9 @@ setEntries(prev => prev.map(e => e.id === id ? { ...e, product, loading: false }
             </button>
             <button
               type="button"
-              onClick={async () => {
-                try { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); } catch(_) {}
+              onClick={() => {
                 window.open('https://www.jumia.com.eg', '_blank', 'noopener,noreferrer');
+                try { caches.keys().then(keys => keys.forEach(k => caches.delete(k))); } catch(_) {}
               }}
               className="px-4 py-1.5 bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
               title="Clear browser cache and refresh Cloudflare connection"
