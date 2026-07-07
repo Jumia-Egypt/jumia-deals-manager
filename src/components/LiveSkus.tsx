@@ -1,6 +1,66 @@
-import { useState, useEffect } from 'react';
-import { Package, Search, ChevronDown, Tag } from 'lucide-react';
-
+import { useState, useEffect, useRef } from 'react';
+import { Package, Search, ChevronDown, Check } from 'lucide-react';
+interface DropdownProps {
+  value: string;
+  onChange: (val: string) => void;
+  options: { label: string; value: string }[];
+  placeholder: string;
+  className?: string;
+}
+function Dropdown({ value, onChange, options, placeholder, className = "" }: DropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  const selectedOption = options.find(o => o.value === value);
+  return (
+    <div className="relative w-full" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center justify-between w-full border border-slate-200 bg-white hover:border-orange-300 hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer shadow-sm text-slate-700 font-semibold ${className}`}
+      >
+        <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+        <ChevronDown className={`w-4 h-4 ml-2 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180 text-orange-500' : 'text-slate-400'}`} />
+      </button>
+      {isOpen && (
+        <div className="absolute z-50 left-0 min-w-full mt-1.5 bg-white border border-slate-100 rounded-xl shadow-lg py-1.5 max-h-60 overflow-auto">
+          <button
+            type="button"
+            className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${
+              value === '' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-slate-700 hover:bg-orange-50 hover:text-orange-600'
+            }`}
+            onClick={() => { onChange(''); setIsOpen(false); }}
+          >
+            <span className="truncate whitespace-nowrap">{placeholder}</span>
+            {value === '' && <Check className="w-4 h-4 text-orange-500 ml-3 flex-shrink-0" />}
+          </button>
+          {options.length > 0 && <div className="h-px bg-slate-100 my-1 mx-2" />}
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${
+                value === opt.value ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-slate-700 hover:bg-orange-50 hover:text-orange-600'
+              }`}
+              onClick={() => { onChange(opt.value); setIsOpen(false); }}
+            >
+              <span className="truncate whitespace-nowrap">{opt.label}</span>
+              {value === opt.value && <Check className="w-4 h-4 text-orange-500 ml-3 flex-shrink-0" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 interface Product {
   sku: string;
   supplier_sku: string;
@@ -18,7 +78,6 @@ interface Campaign {
 interface LiveSkusProps {
   vendorId: string;
 }
-
 export default function LiveSkus({ vendorId }: LiveSkusProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -28,7 +87,6 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
   const [search, setSearch] = useState('');
   const [selectedSkus, setSelectedSkus] = useState<Set<string>>(new Set());
   const [assignMap, setAssignMap] = useState<Record<string, string>>({});
-
   useEffect(() => {
     if (!vendorId) return;
     const load = async () => {
@@ -54,9 +112,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
     };
     load();
   }, [vendorId]);
-
   const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
-
   const filtered = products.filter(p => {
     const matchBrand = !brandFilter || p.brand === brandFilter;
     const matchSearch =
@@ -65,14 +121,11 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
       p.model_name?.toLowerCase().includes(search.toLowerCase());
     return matchBrand && matchSearch;
   });
-
   const allSelected = filtered.length > 0 && selectedSkus.size === filtered.length;
-
   const toggleAll = () => {
     if (allSelected) setSelectedSkus(new Set());
     else setSelectedSkus(new Set(filtered.map(p => p.sku)));
   };
-
   const toggleOne = (sku: string) => {
     setSelectedSkus(prev => {
       const next = new Set(prev);
@@ -80,193 +133,147 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
       return next;
     });
   };
-
   const fmt = (n: number | null | undefined) =>
-    n != null && n > 0 ? `EGP ${n.toLocaleString()}` : '—';
-
-  const stockStyle = (qty: number): { bar: string; text: string; label: string } => {
-    if (qty > 50) return { bar: 'bg-emerald-500', text: 'text-emerald-700', label: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' };
-    if (qty > 10) return { bar: 'bg-amber-400', text: 'text-amber-700', label: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' };
-    return { bar: 'bg-rose-500', text: 'text-rose-700', label: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200' };
+    n != null && n > 0 ? `EGP ${n.toLocaleString()}` : '\u2014';
+  const stockBadge = (qty: number) => {
+    if (!qty && qty !== 0) return 'bg-slate-100 text-slate-600 border-slate-200';
+    if (qty > 50) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (qty > 10) return 'bg-amber-50 text-amber-700 border-amber-200';
+    return 'bg-rose-50 text-rose-700 border-rose-200';
   };
-
   return (
-    <div className="p-6 space-y-5">
-
-      {/* ── Page header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-sm">
-            <Package className="w-5 h-5 text-white" />
+    <div className="w-full h-full flex flex-col bg-slate-50 text-slate-800 font-sans p-6 md:p-10">
+      <div className="mb-8 flex flex-col gap-2">
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-br from-orange-100 to-orange-50 p-3 rounded-2xl shadow-sm border border-orange-200">
+            <Package className="w-7 h-7 text-orange-600" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-tight">Live SKUs</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Your uploaded products catalog</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Live SKUs</h1>
+            <p className="text-sm text-slate-500 font-medium mt-1">
+              Manage your active products, check stock levels, and assign SKUs to ongoing campaigns.
+            </p>
           </div>
         </div>
-        {!loading && (
-          <div className="flex items-center gap-2">
-            {selectedSkus.size > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 text-orange-600 text-xs font-semibold ring-1 ring-orange-200">
-                <Tag className="w-3 h-3" />
-                {selectedSkus.size} selected
-              </span>
-            )}
-            <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold">
-              {filtered.length} / {products.length} products
-            </span>
+      </div>
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col flex-1 overflow-hidden min-h-0">
+        <div className="p-5 md:px-8 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+          <div className="relative w-full md:max-w-md group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search by SKU or Model Name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50 hover:bg-white"
+            />
           </div>
-        )}
-      </div>
-
-      {/* ── Filter bar ── */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search SKU or model name…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition"
-          />
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64 group z-20">
+              <Dropdown
+                value={brandFilter}
+                onChange={setBrandFilter}
+                options={brands.map(b => ({ label: b, value: b }))}
+                placeholder="All Brands"
+                className="rounded-xl py-2.5 px-4 text-sm"
+              />
+            </div>
+          </div>
         </div>
-        <div className="relative">
-          <select
-            value={brandFilter}
-            onChange={e => setBrandFilter(e.target.value)}
-            className="appearance-none pl-4 pr-9 py-2.5 text-sm bg-white border border-gray-200 rounded-xl shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent cursor-pointer transition"
-          >
-            <option value="">All Brands</option>
-            {brands.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-        </div>
-      </div>
-
-      {/* ── Loading ── */}
-      {loading && (
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <div className="w-10 h-10 border-[3px] border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-          <p className="text-sm text-gray-400">Loading your products…</p>
-        </div>
-      )}
-
-      {/* ── Error ── */}
-      {!loading && error && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-          <span className="font-semibold">Error:</span> {error}
-        </div>
-      )}
-
-      {/* ── Empty ── */}
-      {!loading && !error && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
-          <Package className="w-14 h-14 opacity-15" />
-          <p className="text-sm font-medium">
-            {products.length === 0 ? 'No products uploaded yet.' : 'No products match your filters.'}
-          </p>
-        </div>
-      )}
-
-      {/* ── Table ── */}
-      {!loading && !error && filtered.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-fixed min-w-[960px]">
-              <colgroup>
-                <col className="w-12" />
-                <col className="w-28" />
-                <col className="w-28" />
-                <col className="w-28" />
-                <col />
-                <col className="w-28" />
-                <col className="w-28" />
-                <col className="w-20" />
-                <col className="w-44" />
-              </colgroup>
-              <thead>
-                <tr className="text-white text-xs font-semibold uppercase tracking-wider" style={{ background: 'linear-gradient(90deg, #f97316 0%, #fb923c 100%)' }}>
-                  <th className="py-3.5 px-4 text-center">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={toggleAll}
-                      className="w-4 h-4 rounded accent-white cursor-pointer"
-                    />
+        <div className="flex-1 overflow-auto bg-white relative pb-32">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent"></div>
+              <p className="text-sm font-medium animate-pulse text-slate-400">Loading your SKUs...</p>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full p-6">
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-6 py-5 rounded-2xl text-sm max-w-lg text-center shadow-sm">
+                <p className="font-bold mb-2">Failed to load data</p>
+                <p className="text-rose-600/80">{error}</p>
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4 p-6">
+              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm">
+                <Package className="w-8 h-8 text-slate-300" />
+              </div>
+              <div className="text-center">
+                <p className="text-base font-bold text-slate-900">No products found</p>
+                <p className="text-sm text-slate-500 mt-1">Try adjusting your search or brand filters.</p>
+              </div>
+            </div>
+          ) : (
+            <table className="w-full text-sm text-left whitespace-nowrap min-w-[1000px]">
+              <thead className="bg-orange-50 text-orange-600 sticky top-0 z-10 shadow-sm border-b border-orange-200">
+                <tr>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide w-20">
+                    <label className="relative inline-flex items-center cursor-pointer mx-auto">
+                      <input type="checkbox" checked={allSelected} onChange={toggleAll} className="sr-only peer" />
+                      <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/30 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500 peer-checked:after:border-white shadow-inner"></div>
+                    </label>
                   </th>
-                  <th className="py-3.5 px-4 text-center">SKU</th>
-                  <th className="py-3.5 px-4 text-center">Supplier SKU</th>
-                  <th className="py-3.5 px-4 text-center">Brand</th>
-                  <th className="py-3.5 px-4 text-center">Model Name</th>
-                  <th className="py-3.5 px-4 text-center">Price Before</th>
-                  <th className="py-3.5 px-4 text-center">Price After</th>
-                  <th className="py-3.5 px-4 text-center">Stock</th>
-                  <th className="py-3.5 px-4 text-center">Assign Campaign</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide">SKU</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide w-[120px]">Supplier SKU</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide">Brand</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide">Model Name</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide">Price Before</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide">Price After</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide">Stock</th>
+                  <th className="px-6 py-4 text-center font-bold tracking-wide w-52">Assign to Campaign</th>
                 </tr>
               </thead>
-              <tbody>
-                {filtered.map((p, i) => {
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((p, idx) => {
                   const isSelected = selectedSkus.has(p.sku);
-                  const stock = stockStyle(p.live_stock);
                   return (
                     <tr
                       key={p.sku}
-                      onClick={() => toggleOne(p.sku)}
-                      className={`
-                        border-t border-gray-100 cursor-pointer transition-colors
-                        ${isSelected
-                          ? 'bg-orange-50/70'
-                          : i % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50/40 hover:bg-gray-50'}
-                      `}
+                      className={`transition-colors duration-150 group ${isSelected ? 'bg-orange-50/60 hover:bg-orange-100/60' : 'bg-white hover:bg-orange-50'}`}
                     >
-                      <td className="py-3 px-4 text-center" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleOne(p.sku)}
-                          className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
-                        />
+                      <td className="px-6 py-4 text-center">
+                        <label className="relative inline-flex items-center cursor-pointer mx-auto">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleOne(p.sku)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/30 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500 peer-checked:after:border-white shadow-inner"></div>
+                        </label>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="font-mono text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded-md">{p.sku}</span>
+                      <td className="px-6 py-4 text-center font-bold text-slate-800 font-mono text-sm">{p.sku}</td>
+                      <td className="px-6 py-4 text-center text-slate-500 max-w-[120px] truncate font-mono text-xs" title={p.supplier_sku}>
+                        {p.supplier_sku}
                       </td>
-                      <td className="py-3 px-4 text-center font-mono text-xs text-gray-400 truncate" title={p.supplier_sku}>
-                        {p.supplier_sku || '—'}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-xs font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded-lg">{p.brand || '—'}</span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="block truncate text-gray-700 font-medium text-xs" title={p.model_name}>{p.model_name || '—'}</span>
-                      </td>
-                      <td className="py-3 px-4 text-center text-xs text-gray-400 line-through">{fmt(p.price_before)}</td>
-                      <td className="py-3 px-4 text-center text-sm font-bold text-gray-800">{fmt(p.price_after)}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span className={`inline-flex items-center justify-center min-w-[40px] px-2 py-1 rounded-lg text-xs font-bold ${stock.label}`}>
-                          {p.live_stock ?? 0}
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-semibold text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-xs">
+                          {p.brand}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center" onClick={e => e.stopPropagation()}>
-                        <div className="relative">
-                          <select
+                      <td className="px-6 py-4 text-center text-slate-700 truncate max-w-[240px] font-medium" title={p.model_name}>
+                        {p.model_name}
+                      </td>
+                      <td className="px-6 py-4 text-center text-slate-400 line-through decoration-slate-300 font-mono text-xs">
+                        {fmt(p.price_before)}
+                      </td>
+                      <td className="px-6 py-4 text-center font-bold text-[#f97316] font-mono text-sm">
+                        {fmt(p.price_after)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold border font-mono ${stockBadge(p.live_stock)}`}>
+                          {p.live_stock}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="relative mx-auto w-full max-w-[160px] group">
+                          <Dropdown
                             value={assignMap[p.sku] || ''}
-                            onChange={e => setAssignMap(prev => ({ ...prev, [p.sku]: e.target.value }))}
-                            className={`
-                              w-full appearance-none pl-3 pr-7 py-1.5 text-xs rounded-lg border cursor-pointer
-                              focus:outline-none focus:ring-2 focus:ring-orange-400 transition
-                              ${assignMap[p.sku]
-                                ? 'border-orange-300 bg-orange-50 text-orange-700 font-semibold'
-                                : 'border-gray-200 bg-white text-gray-500'}
-                            `}
-                          >
-                            <option value="">— Select —</option>
-                            {campaigns.length === 0
-                              ? <option disabled>No active campaigns</option>
-                              : campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
-                            }
-                          </select>
-                          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                            onChange={(val) => setAssignMap({ ...assignMap, [p.sku]: val })}
+                            options={campaigns.map(c => ({ label: c.name, value: c.id }))}
+                            placeholder="Select"
+                            className="rounded-lg py-1.5 px-3 text-xs"
+                          />
                         </div>
                       </td>
                     </tr>
@@ -274,9 +281,9 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                 })}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
