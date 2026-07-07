@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, Tag, Settings, LogOut, User, Users } from 'lucide-react';
+import { Calendar, Tag, Settings, LogOut, User, Users, Package } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -21,12 +21,14 @@ export function Layout({ children, activeTab = 'calendar', onNavigate, onLogout,
     menuItems = [
       { id: 'admin', label: 'Campaign Management', icon: Settings },
       { id: 'calendar', label: 'Campaign Calendar', icon: Calendar },
+      { id: 'vendor-skus', label: 'Vendor SKUs', icon: Package },
       { id: 'submissions', label: 'Vendors\' Submissions', icon: Tag },
       { id: 'vendor-management', label: 'Account Management', icon: Users }
     ];
   } else {
     menuItems = [
       { id: 'calendar', label: 'Campaign Calendar', icon: Calendar },
+      { id: 'live-skus', label: 'Live SKUs', icon: Package },
       { id: 'submissions', label: 'My Submissions', icon: Tag },
       { id: 'performance', label: 'My Performance', icon: User }
     ];
@@ -119,7 +121,7 @@ export function Layout({ children, activeTab = 'calendar', onNavigate, onLogout,
         </div>
       </header>
 
-      {/* Mobile Nav (Visible only on small screens) */}
+      {/* Mobile Nav */}
       <nav className="md:hidden flex overflow-x-auto bg-white border-b border-slate-200 px-4 py-2 space-x-2 shrink-0">
         {menuItems.map((item) => {
           const Icon = item.icon;
