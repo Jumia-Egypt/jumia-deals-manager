@@ -14,11 +14,12 @@ module.exports = async function handler(req, res) {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, email, role, password')
+    .select('id, name, email, role, password, target_gmv')
     .ilike('email', normalizedEmail)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return res.status(401).json({ error: 'Invalid email or password' });
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(401).json({ error: 'Invalid email or password' });
   if (data.password !== password) return res.status(401).json({ error: 'Invalid email or password' });
 
   return res.json({
@@ -26,6 +27,6 @@ module.exports = async function handler(req, res) {
     name: data.name,
     email: data.email,
     role: data.role.toLowerCase(),
-    vendorId: data.id
+    targetGMV: data.target_gmv || 200000
   });
 };
