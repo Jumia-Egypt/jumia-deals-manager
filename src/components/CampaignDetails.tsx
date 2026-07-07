@@ -152,7 +152,8 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
         const brand = brandMatch?.[1]?.trim() || '';
         const image = imageMatch?.[1] || '';
         const category = 'General';
-        setEntries(prev => prev.map(e => e.id === id ? { ...e, product, loading: false } : e));
+                const product = { name, brand, category, livePrice, bestPrice, image };
+setEntries(prev => prev.map(e => e.id === id ? { ...e, product, loading: false } : e));
       } catch (err) {
         setEntries(prev => prev.map(e => e.id === id ? { ...e, loading: false, error: 'Failed to fetch product. Please try again.' } : e));
       }
