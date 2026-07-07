@@ -12,6 +12,8 @@ import { VendorManagement } from './components/VendorManagement';
 import { MyPerformance } from './components/MyPerformance';
 import { Login } from './components/Login';
 import { SubmissionsDashboard } from './components/SubmissionsDashboard';
+import VendorSkus from './components/VendorSkus';
+import LiveSkus from './components/LiveSkus';
 import type { Campaign } from './types';
 
 export default function App() {
@@ -81,6 +83,14 @@ export default function App() {
 
       {activeTab === 'performance' && (
         <MyPerformance vendorId={loggedInVendorId} />
+      )}
+
+      {activeTab === 'vendor-skus' && (
+        <VendorSkus />
+      )}
+
+      {activeTab === 'live-skus' && (
+        <LiveSkus vendorId={loggedInVendorId} />
       )}
     </Layout>
   );
