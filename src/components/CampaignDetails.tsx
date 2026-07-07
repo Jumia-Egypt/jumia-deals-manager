@@ -260,7 +260,7 @@ setEntries(prev => prev.map(e => e.id === id ? { ...e, product, loading: false }
     elapsedIntervalRef.current = setInterval(() => setElapsedSeconds(s => (s ?? 0) + 1), 1000);
     // Batch + pause with live countdown status
     const BATCH_SIZE = 20;
-    const SKU_DELAY = 800;
+    const SKU_DELAY = 1200;
     const PAUSE_SECS = 60;
     const totalBatches = Math.ceil(newEntries.length / BATCH_SIZE);
     (async () => {
@@ -813,6 +813,18 @@ setEntries(prev => prev.map(e => e.id === id ? { ...e, product, loading: false }
             >
               <UploadCloud className="w-3.5 h-3.5" />
               <span>Upload Sheet</span>
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); } catch(_) {}
+                window.open('https://www.jumia.com.eg', '_blank', 'noopener,noreferrer');
+              }}
+              className="px-4 py-1.5 bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:translate-y-px"
+              title="Clear browser cache and refresh Cloudflare connection"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+              <span>Clear Cache</span>
             </button>
             <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleBulkUpload} />
           </div>
