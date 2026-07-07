@@ -34,26 +34,26 @@ function Dropdown({ value, onChange, options, placeholder, className = "" }: Dro
         <div className="absolute z-50 left-0 min-w-full mt-1.5 bg-white border border-slate-100 rounded-xl shadow-lg py-1.5 max-h-60 overflow-auto">
           <button
             type="button"
-            className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${
+            className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between ${
               value === '' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-slate-700 hover:bg-orange-50 hover:text-orange-600'
             }`}
             onClick={() => { onChange(''); setIsOpen(false); }}
           >
             <span className="truncate whitespace-nowrap">{placeholder}</span>
-            {value === '' && <Check className="w-4 h-4 text-orange-500 ml-3 flex-shrink-0" />}
+            {value === '' && <Check className="w-3.5 h-3.5 text-orange-500 ml-3 flex-shrink-0" />}
           </button>
           {options.length > 0 && <div className="h-px bg-slate-100 my-1 mx-2" />}
           {options.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${
+              className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between ${
                 value === opt.value ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-slate-700 hover:bg-orange-50 hover:text-orange-600'
               }`}
               onClick={() => { onChange(opt.value); setIsOpen(false); }}
             >
               <span className="truncate whitespace-nowrap">{opt.label}</span>
-              {value === opt.value && <Check className="w-4 h-4 text-orange-500 ml-3 flex-shrink-0" />}
+              {value === opt.value && <Check className="w-3.5 h-3.5 text-orange-500 ml-3 flex-shrink-0" />}
             </button>
           ))}
         </div>
@@ -121,11 +121,6 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
       p.model_name?.toLowerCase().includes(search.toLowerCase());
     return matchBrand && matchSearch;
   });
-  const allSelected = filtered.length > 0 && selectedSkus.size === filtered.length;
-  const toggleAll = () => {
-    if (allSelected) setSelectedSkus(new Set());
-    else setSelectedSkus(new Set(filtered.map(p => p.sku)));
-  };
   const toggleOne = (sku: string) => {
     setSelectedSkus(prev => {
       const next = new Set(prev);
@@ -142,96 +137,94 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
     return 'bg-rose-50 text-rose-700 border-rose-200';
   };
   return (
-    <div className="w-full h-full flex flex-col bg-slate-50 text-slate-800 font-sans p-6 md:p-10">
-      <div className="mb-8 flex flex-col gap-2">
-        <div className="flex items-center gap-4">
-          <div className="bg-gradient-to-br from-orange-100 to-orange-50 p-3 rounded-2xl shadow-sm border border-orange-200">
-            <Package className="w-7 h-7 text-orange-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Live SKUs</h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">
-              Manage your active products, check stock levels, and assign SKUs to ongoing campaigns.
-            </p>
-          </div>
+    <div className="w-full h-full flex flex-col bg-slate-50 text-slate-800 font-sans p-6 md:p-8">
+      <div className="mb-6 flex items-center gap-4">
+        <div className="bg-gradient-to-br from-orange-100 to-orange-50 p-3 rounded-2xl shadow-sm border border-orange-200">
+          <Package className="w-6 h-6 text-orange-600" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Live SKUs</h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Manage your active products, check stock levels, and assign SKUs to ongoing campaigns.
+          </p>
         </div>
       </div>
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col flex-1 overflow-hidden min-h-0">
-        <div className="p-5 md:px-8 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
-          <div className="relative w-full md:max-w-md group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+        {/* Filters */}
+        <div className="p-4 md:px-6 border-b border-slate-100 flex flex-col md:flex-row items-center gap-3 bg-white">
+          <div className="relative w-full md:max-w-sm group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
             <input
               type="text"
               placeholder="Search by SKU or Model Name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50 hover:bg-white"
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50 hover:bg-white"
             />
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64 group z-20">
-              <Dropdown
-                value={brandFilter}
-                onChange={setBrandFilter}
-                options={brands.map(b => ({ label: b, value: b }))}
-                placeholder="All Brands"
-                className="rounded-xl py-2.5 px-4 text-sm"
-              />
-            </div>
+          <div className="relative w-full md:w-52 z-20">
+            <Dropdown
+              value={brandFilter}
+              onChange={setBrandFilter}
+              options={brands.map(b => ({ label: b, value: b }))}
+              placeholder="All Brands"
+              className="rounded-xl py-2 px-3.5 text-xs"
+            />
           </div>
+          {selectedSkus.size > 0 && (
+            <span className="ml-auto text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-lg whitespace-nowrap">
+              {selectedSkus.size} selected
+            </span>
+          )}
         </div>
-        <div className="flex-1 overflow-auto bg-white relative pb-32">
+        {/* Table */}
+        <div className="flex-1 overflow-auto bg-white relative">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent"></div>
-              <p className="text-sm font-medium animate-pulse text-slate-400">Loading your SKUs...</p>
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <div className="animate-spin rounded-full h-7 w-7 border-2 border-orange-500 border-t-transparent"></div>
+              <p className="text-xs text-slate-400 animate-pulse">Loading your SKUs...</p>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full p-6">
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-6 py-5 rounded-2xl text-sm max-w-lg text-center shadow-sm">
-                <p className="font-bold mb-2">Failed to load data</p>
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-6 py-4 rounded-2xl text-xs max-w-md text-center">
+                <p className="font-bold mb-1">Failed to load data</p>
                 <p className="text-rose-600/80">{error}</p>
               </div>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4 p-6">
-              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm">
-                <Package className="w-8 h-8 text-slate-300" />
+            <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
+              <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
+                <Package className="w-7 h-7 text-slate-300" />
               </div>
               <div className="text-center">
-                <p className="text-base font-bold text-slate-900">No products found</p>
-                <p className="text-sm text-slate-500 mt-1">Try adjusting your search or brand filters.</p>
+                <p className="text-sm font-bold text-slate-900">No products found</p>
+                <p className="text-xs text-slate-500 mt-1">Try adjusting your search or brand filters.</p>
               </div>
             </div>
           ) : (
-            <table className="w-full text-sm text-left whitespace-nowrap min-w-[1000px]">
-              <thead className="bg-orange-50 text-orange-600 sticky top-0 z-10 shadow-sm border-b border-orange-200">
+            <table className="w-full text-xs text-left whitespace-nowrap min-w-[1000px]">
+              <thead className="bg-orange-50 text-orange-600 sticky top-0 z-10 border-b border-orange-200">
                 <tr>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide w-20">
-                    <label className="relative inline-flex items-center cursor-pointer mx-auto">
-                      <input type="checkbox" checked={allSelected} onChange={toggleAll} className="sr-only peer" />
-                      <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/30 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500 peer-checked:after:border-white shadow-inner"></div>
-                    </label>
-                  </th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide">SKU</th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide w-[120px]">Supplier SKU</th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide">Brand</th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide">Model Name</th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide">Price Before</th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide">Price After</th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide">Stock</th>
-                  <th className="px-6 py-4 text-center font-bold tracking-wide w-52">Assign to Campaign</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-16">Select</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-28">SKU</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-28">Supplier SKU</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-24">Brand</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide">Model Name</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-24">Price Before</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-24">Price After</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-16">Stock</th>
+                  <th className="px-4 py-3 text-center font-bold tracking-wide w-44">Assign to Campaign</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((p, idx) => {
+                {filtered.map((p) => {
                   const isSelected = selectedSkus.has(p.sku);
                   return (
                     <tr
                       key={p.sku}
-                      className={`transition-colors duration-150 group ${isSelected ? 'bg-orange-50/60 hover:bg-orange-100/60' : 'bg-white hover:bg-orange-50'}`}
+                      className={`transition-colors duration-150 ${isSelected ? 'bg-orange-50/60 hover:bg-orange-100/50' : 'bg-white hover:bg-orange-50/40'}`}
                     >
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-2.5 text-center">
                         <label className="relative inline-flex items-center cursor-pointer mx-auto">
                           <input
                             type="checkbox"
@@ -239,34 +232,36 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                             onChange={() => toggleOne(p.sku)}
                             className="sr-only peer"
                           />
-                          <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/30 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500 peer-checked:after:border-white shadow-inner"></div>
+                          <div className="w-8 h-4 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/30 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-orange-500 peer-checked:after:border-white shadow-inner"></div>
                         </label>
                       </td>
-                      <td className="px-6 py-4 text-center font-bold text-slate-800 font-mono text-sm">{p.sku}</td>
-                      <td className="px-6 py-4 text-center text-slate-500 max-w-[120px] truncate font-mono text-xs" title={p.supplier_sku}>
-                        {p.supplier_sku}
+                      <td className="px-4 py-2.5 text-center font-mono text-slate-700">{p.sku}</td>
+                      <td className="px-4 py-2.5 text-center font-mono text-slate-500 truncate max-w-[112px]" title={p.supplier_sku}>
+                        {p.supplier_sku || '—'}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="font-semibold text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-xs">
-                          {p.brand}
+                      <td className="px-4 py-2.5 text-center">
+                        <span className="text-slate-700 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm font-medium">
+                          {p.brand || '—'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center text-slate-700 truncate max-w-[240px] font-medium" title={p.model_name}>
-                        {p.model_name}
+                      <td className="px-4 py-2.5 text-center text-slate-700 font-medium">
+                        <span className="block truncate max-w-[260px] mx-auto" title={p.model_name}>
+                          {p.model_name || '—'}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 text-center text-slate-400 line-through decoration-slate-300 font-mono text-xs">
+                      <td className="px-4 py-2.5 text-center text-slate-400 line-through decoration-slate-300 font-mono">
                         {fmt(p.price_before)}
                       </td>
-                      <td className="px-6 py-4 text-center font-bold text-[#f97316] font-mono text-sm">
+                      <td className="px-4 py-2.5 text-center font-semibold text-[#f97316] font-mono">
                         {fmt(p.price_after)}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold border font-mono ${stockBadge(p.live_stock)}`}>
-                          {p.live_stock}
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full font-semibold border font-mono ${stockBadge(p.live_stock)}`}>
+                          {p.live_stock ?? 0}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="relative mx-auto w-full max-w-[160px] group">
+                      <td className="px-4 py-2.5 text-center">
+                        <div className="relative mx-auto w-full max-w-[150px]">
                           <Dropdown
                             value={assignMap[p.sku] || ''}
                             onChange={(val) => setAssignMap({ ...assignMap, [p.sku]: val })}
