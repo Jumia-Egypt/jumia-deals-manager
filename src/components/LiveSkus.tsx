@@ -1,107 +1,252 @@
-import React, { useState, useEffect } from 'react';
-import { Package, Search, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Package, Search, SlidersHorizontal } from 'lucide-react';
 
-interface ProductRow {
-  sku: string; supplier_sku: string; brand: string; model_name: string;
-  price_before: number; price_after: number; live_stock: number;
+interface Product {
+  sku: string;
+  supplier_sku: string;
+  brand: string;
+  model_name: string;
+  price_before: number;
+  price_after: number;
+  live_stock: number;
 }
 
-interface LiveSkusProps { vendorId: string | null; }
+interface Campaign {
+  id: string;
+  name: string;
+  status: string;
+}
+
+interface LiveSkusProps {
+  vendorId: string;
+}
 
 export default function LiveSkus({ vendorId }: LiveSkusProps) {
-  const [products, setProducts] = useState<ProductRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [selectedSkus, setSelectedSkus] = useState<Set<string>>(new Set());
+  const [assignMap, setAssignMap] = useState<Record<string, string>>({});
 
-  const load = async () => {
+  useEffect(() => {
     if (!vendorId) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/products?vendor_id=' + vendorId);
-      const data = await res.json();
-      setProducts(Array.isArray(data) ? data.map((p: any) => ({
-        sku: p.sku, supplier_sku: p.supplier_sku || '', brand: p.brand || '',
-        model_name: p.model_name || p.name || '',
-        price_before: p.best_price || 0, price_after: p.live_price || 0, live_stock: p.live_stock || 0
-      })) : []);
-    } catch { setProducts([]); } finally { setLoading(false); }
+    const load = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [prodRes, campRes] = await Promise.all([
+          fetch(`/api/products?vendor_id=${vendorId}`),
+          fetch('/api/campaigns'),
+        ]);
+        if (!prodRes.ok) throw new Error('Failed to load products');
+        const prodData = await prodRes.json();
+        setProducts(prodData || []);
+        if (campRes.ok) {
+          const campData = await campRes.json();
+          setCampaigns((campData || []).filter((c: Campaign) => c.status === 'Active'));
+        }
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [vendorId]);
+
+  const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
+
+  const filtered = products.filter(p => {
+    const matchBrand = !brandFilter || p.brand === brandFilter;
+    const matchSearch =
+      !search ||
+      p.sku?.toLowerCase().includes(search.toLowerCase()) ||
+      p.model_name?.toLowerCase().includes(search.toLowerCase());
+    return matchBrand && matchSearch;
+  });
+
+  const allSelected = filtered.length > 0 && selectedSkus.size === filtered.length;
+
+  const toggleAll = () => {
+    if (allSelected) setSelectedSkus(new Set());
+    else setSelectedSkus(new Set(filtered.map(p => p.sku)));
   };
 
-  useEffect(() => { load(); }, [vendorId]);
+  const toggleOne = (sku: string) => {
+    setSelectedSkus(prev => {
+      const next = new Set(prev);
+      if (next.has(sku)) next.delete(sku); else next.add(sku);
+      return next;
+    });
+  };
 
-  const filtered = products.filter(r =>
-    !search ||
-    r.sku.toLowerCase().includes(search.toLowerCase()) ||
-    r.model_name.toLowerCase().includes(search.toLowerCase()) ||
-    r.brand.toLowerCase().includes(search.toLowerCase()) ||
-    (r.supplier_sku || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const fmt = (n: number | null | undefined) =>
+    n != null && n > 0 ? `EGP ${n.toLocaleString()}` : '—';
+
+  const stockBadge = (qty: number) => {
+    if (!qty && qty !== 0) return 'bg-gray-100 text-gray-500';
+    if (qty > 50) return 'bg-green-100 text-green-700';
+    if (qty > 10) return 'bg-yellow-100 text-yellow-700';
+    return 'bg-red-100 text-red-700';
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Live SKUs</h1>
-        <p className="text-sm text-slate-500 mt-1">Your active product catalog as uploaded by the Jumia team.</p>
+    <div className="p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <Package className="text-orange-500" size={22} />
+        <h2 className="text-xl font-bold text-gray-800">My Live SKUs</h2>
+        {!loading && (
+          <span className="bg-orange-100 text-orange-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+            {filtered.length} / {products.length}
+          </span>
+        )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-orange-500" />
-            <span className="text-sm font-bold text-slate-700">{products.length} SKUs</span>
-            {loading && <span className="text-xs text-slate-400 animate-pulse">Loading...</span>}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-              <input
-                value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search SKU, brand, model..."
-                className="pl-8 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-orange-300"
-              />
-            </div>
-            <button onClick={load} disabled={loading}
-              className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-all disabled:opacity-50">
-              <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search SKU or model…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-56 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          />
         </div>
 
-        {filtered.length === 0 && !loading ? (
-          <div className="py-16 text-center text-slate-400 text-sm">
-            {products.length === 0 ? 'No SKUs have been uploaded for your account yet.' : 'No results match your search.'}
-          </div>
-        ) : (
+        <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white">
+          <SlidersHorizontal size={15} className="text-gray-400 shrink-0" />
+          <select
+            value={brandFilter}
+            onChange={e => setBrandFilter(e.target.value)}
+            className="text-sm focus:outline-none bg-transparent text-gray-700 cursor-pointer"
+          >
+            <option value="">All Brands</option>
+            {brands.map(b => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+        </div>
+
+        {selectedSkus.size > 0 && (
+          <span className="ml-auto text-sm font-medium text-orange-600 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-lg">
+            {selectedSkus.size} selected
+          </span>
+        )}
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
+          Loading products…
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-sm border-collapse">
+              <colgroup>
+                <col style={{ width: '40px' }} />
+                <col style={{ width: '120px' }} />
+                <col style={{ width: '120px' }} />
+                <col style={{ width: '110px' }} />
+                <col />
+                <col style={{ width: '120px' }} />
+                <col style={{ width: '120px' }} />
+                <col style={{ width: '90px' }} />
+                <col style={{ width: '190px' }} />
+              </colgroup>
               <thead>
-                <tr className="bg-slate-50 text-slate-500 font-semibold">
-                  <th className="text-left px-4 py-3">SKU</th>
-                  <th className="text-left px-4 py-3">Supplier SKU</th>
-                  <th className="text-left px-4 py-3">Brand</th>
-                  <th className="text-left px-4 py-3">Model Name</th>
-                  <th className="text-right px-4 py-3">Price Before</th>
-                  <th className="text-right px-4 py-3">Price After</th>
-                  <th className="text-right px-4 py-3">Live Stock</th>
+                <tr style={{ backgroundColor: '#f97316' }} className="text-white">
+                  <th className="px-3 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      className="cursor-pointer w-4 h-4 accent-white"
+                    />
+                  </th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">SKU</th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">Supplier SKU</th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">Brand</th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">Model Name</th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">Price Before</th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">Price After</th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">Stock</th>
+                  <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wide">Assign to Campaign</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filtered.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-4 py-2.5 font-mono font-bold text-slate-700">{row.sku}</td>
-                    <td className="px-4 py-2.5 text-slate-500">{row.supplier_sku || '—'}</td>
-                    <td className="px-4 py-2.5 text-slate-600">{row.brand || '—'}</td>
-                    <td className="px-4 py-2.5 text-slate-700 max-w-[200px] truncate">{row.model_name || '—'}</td>
-                    <td className="px-4 py-2.5 text-right text-slate-500">EGP {row.price_before?.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-slate-700">EGP {row.price_after?.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right text-slate-600">{row.live_stock?.toLocaleString()}</td>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="text-center py-16 text-gray-400 text-sm">
+                      {products.length === 0 ? 'No products uploaded yet.' : 'No products match your filters.'}
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered.map((p, i) => (
+                    <tr
+                      key={p.sku}
+                      className={`border-t border-gray-100 transition-colors ${
+                        selectedSkus.has(p.sku)
+                          ? 'bg-orange-50'
+                          : i % 2 === 0
+                          ? 'bg-white'
+                          : 'bg-gray-50/40'
+                      } hover:bg-orange-50/60`}
+                    >
+                      <td className="px-3 py-2.5 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedSkus.has(p.sku)}
+                          onChange={() => toggleOne(p.sku)}
+                          className="cursor-pointer w-4 h-4 accent-orange-500"
+                        />
+                      </td>
+                      <td className="px-3 py-2.5 text-center font-mono text-xs text-gray-700">{p.sku}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-xs text-gray-400">{p.supplier_sku || '—'}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-700">{p.brand || '—'}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-800 font-medium">
+                        <span className="block truncate max-w-xs mx-auto" title={p.model_name}>{p.model_name || '—'}</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center text-gray-400">{fmt(p.price_before)}</td>
+                      <td className="px-3 py-2.5 text-center text-green-600 font-semibold">{fmt(p.price_after)}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`inline-flex items-center justify-center w-12 px-2 py-0.5 rounded-full text-xs font-semibold ${stockBadge(p.live_stock)}`}>
+                          {p.live_stock ?? '—'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <select
+                          value={assignMap[p.sku] || ''}
+                          onChange={e => setAssignMap(prev => ({ ...prev, [p.sku]: e.target.value }))}
+                          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 w-full max-w-[170px]"
+                        >
+                          <option value="">— Select Campaign —</option>
+                          {campaigns.length === 0 && (
+                            <option disabled>No active campaigns</option>
+                          )}
+                          {campaigns.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
