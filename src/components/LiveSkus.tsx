@@ -158,7 +158,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                 <col style={{width:'160px'}} />
               </colgroup>
               <thead className="sticky top-0 z-10">
-                <tr className="bg-white border-b-2 border-orange-400 text-orange-500">
+                <tr className="bg-orange-50 border-b border-orange-200 text-orange-600">
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">Select</th>
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">SKU</th>
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">Supplier SKU</th>
