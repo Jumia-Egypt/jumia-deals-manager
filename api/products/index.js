@@ -12,21 +12,12 @@ module.exports = async function handler(req, res) {
     if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
     const { data, error } = await supabase
       .from('products')
-      .select('sku, supplier_sku, brand, model_name, live_stock, live_price, best_price, vendor_id')
+      .select('sku, supplier_sku, brand, name, live_stock, live_price, best_price, vendor_id')
       .eq('vendor_id', vendor_id)
-      .order('sku', { ascending: true });
+      .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
-    // Map DB columns → frontend field names
-    const mapped = (data || []).map(p => ({
-      sku:          p.sku,
-      supplier_sku: p.supplier_sku || '',
-      brand:        p.brand || '',
-      model_name:   p.model_name || '',
-      price_before: parseFloat(p.best_price) || 0,
-      price_after:  parseFloat(p.live_price) || 0,
-      live_stock:   parseInt(p.live_stock) || 0,
-    }));
-    return res.json(mapped);
+    // Return name as model_name so the frontend component works without changes
+    return res.json((data || []).map(r => ({ ...r, model_name: r.name })));
   }
 
   // POST /api/products  { products: [...] }
@@ -39,7 +30,7 @@ module.exports = async function handler(req, res) {
       sku:          String(p.sku).trim(),
       supplier_sku: p.supplier_sku || null,
       brand:        p.brand || null,
-      model_name:   p.model_name || null,
+      name:         p.model_name || p.name || null,   // map model_name → name (DB column)
       live_price:   parseFloat(p.price_after)  || null,
       best_price:   parseFloat(p.price_before) || null,
       live_stock:   parseInt(p.live_stock)     || 0,
