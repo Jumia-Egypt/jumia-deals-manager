@@ -12,11 +12,11 @@ module.exports = async function handler(req, res) {
     if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
     const { data, error } = await supabase
       .from('products')
-      .select('sku, supplier_sku, brand, name, live_stock, live_price, best_price, vendor_id')
+      .select('sku, supplier_sku, brand, name, category, live_stock, live_price, best_price, vendor_id')
       .eq('vendor_id', vendor_id)
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
-    // Return name as model_name so the frontend component works without changes
+    // Return name as model_name so the frontend works without changes
     return res.json((data || []).map(r => ({ ...r, model_name: r.name })));
   }
 
@@ -29,8 +29,9 @@ module.exports = async function handler(req, res) {
     const rows = products.map(p => ({
       sku:          String(p.sku).trim(),
       supplier_sku: p.supplier_sku || null,
-      brand:        p.brand || null,
-      name:         p.model_name || p.name || null,   // map model_name → name (DB column)
+      brand:        p.brand        || null,
+      name:         p.model_name   || p.name || null,
+      category:     p.category     || null,
       live_price:   parseFloat(p.price_after)  || null,
       best_price:   parseFloat(p.price_before) || null,
       live_stock:   parseInt(p.live_stock)     || 0,
@@ -45,7 +46,7 @@ module.exports = async function handler(req, res) {
     return res.json({ success: true, count: rows.length });
   }
 
-  // DELETE /api/products?vendor_id=xxx  — removes all SKUs for this vendor
+  // DELETE /api/products?vendor_id=xxx
   if (req.method === 'DELETE') {
     const { vendor_id } = req.query;
     if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
