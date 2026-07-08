@@ -1,6 +1,42 @@
 import { useState, useEffect, useRef } from 'react';
 import { Package, Search, ChevronDown, Check } from 'lucide-react';
 
+/* ── Dot Spinner ─────────────────────────────── */
+const DOT_SPINNER_CSS = `
+  .dot-spinner{--uib-size:2.8rem;--uib-speed:.9s;--uib-color:#f97316;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size);}
+  .dot-spinner__dot{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:flex-start;height:100%;width:100%;}
+  .dot-spinner__dot::before{content:'';height:20%;width:20%;border-radius:50%;background-color:var(--uib-color);transform:scale(0);opacity:0.5;animation:pulse0112 calc(var(--uib-speed)*1.111) ease-in-out infinite;box-shadow:0 0 20px rgba(249,115,22,0.3);}
+  .dot-spinner__dot:nth-child(2){transform:rotate(45deg);}
+  .dot-spinner__dot:nth-child(2)::before{animation-delay:calc(var(--uib-speed)*-0.875);}
+  .dot-spinner__dot:nth-child(3){transform:rotate(90deg);}
+  .dot-spinner__dot:nth-child(3)::before{animation-delay:calc(var(--uib-speed)*-0.75);}
+  .dot-spinner__dot:nth-child(4){transform:rotate(135deg);}
+  .dot-spinner__dot:nth-child(4)::before{animation-delay:calc(var(--uib-speed)*-0.625);}
+  .dot-spinner__dot:nth-child(5){transform:rotate(180deg);}
+  .dot-spinner__dot:nth-child(5)::before{animation-delay:calc(var(--uib-speed)*-0.5);}
+  .dot-spinner__dot:nth-child(6){transform:rotate(225deg);}
+  .dot-spinner__dot:nth-child(6)::before{animation-delay:calc(var(--uib-speed)*-0.375);}
+  .dot-spinner__dot:nth-child(7){transform:rotate(270deg);}
+  .dot-spinner__dot:nth-child(7)::before{animation-delay:calc(var(--uib-speed)*-0.25);}
+  .dot-spinner__dot:nth-child(8){transform:rotate(315deg);}
+  .dot-spinner__dot:nth-child(8)::before{animation-delay:calc(var(--uib-speed)*-0.125);}
+  @keyframes pulse0112{0%,100%{transform:scale(0);opacity:0.5;}50%{transform:scale(1);opacity:1;}}
+`;
+function DotSpinner({ label = 'Loading…' }: { label?: string }) {
+  return (
+    <>
+      <style>{DOT_SPINNER_CSS}</style>
+      <div className="flex flex-col items-center justify-center gap-4">
+        <div className="dot-spinner">
+          {[...Array(8)].map((_, i) => <div key={i} className="dot-spinner__dot" />)}
+        </div>
+        {label && <p className="text-xs font-medium text-slate-400 animate-pulse">{label}</p>}
+      </div>
+    </>
+  );
+}
+
+/* ── Dropdown ────────────────────────────────── */
 interface DropdownProps {
   value: string;
   onChange: (val: string) => void;
@@ -45,10 +81,12 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
   );
 }
 
+/* ── Types ───────────────────────────────────── */
 interface Product { sku: string; supplier_sku: string; brand: string; model_name: string; price_before: number; price_after: number; live_stock: number; }
 interface Campaign { id: string; name: string; status: string; }
 interface LiveSkusProps { vendorId: string; }
 
+/* ── Main Component ──────────────────────────── */
 export default function LiveSkus({ vendorId }: LiveSkusProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -82,7 +120,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
 
   const toggleOne = (sku: string) => setSelectedSkus(prev => { const n = new Set(prev); n.has(sku) ? n.delete(sku) : n.add(sku); return n; });
 
-  const fmt = (n: number | null | undefined) => n != null && n > 0 ? `EGP ${n.toLocaleString()}` : '\u2014';
+  const fmt = (n: number | null | undefined) => n != null && n > 0 ? `EGP ${n.toLocaleString()}` : '—';
   const stockBadge = (qty: number) => {
     if (!qty && qty !== 0) return 'bg-slate-100 text-slate-600 border-slate-200';
     if (qty > 50) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -92,7 +130,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-50 font-sans p-6">
-      {/* Header */}
+      {/* Page header */}
       <div className="mb-5 flex items-center gap-3">
         <div className="bg-gradient-to-br from-orange-100 to-orange-50 p-2.5 rounded-xl shadow-sm border border-orange-200">
           <Package className="w-5 h-5 text-orange-600" />
@@ -129,9 +167,8 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <div className="animate-spin h-7 w-7 border-2 border-orange-500 border-t-transparent rounded-full" />
-              <p className="text-xs text-slate-400 animate-pulse">Loading your SKUs...</p>
+            <div className="flex items-center justify-center h-full">
+              <DotSpinner label="Loading your SKUs…" />
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full p-6">
@@ -182,12 +219,12 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                         </label>
                       </td>
                       <td className="px-3 py-2.5 text-center font-mono text-slate-700">{p.sku}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={p.supplier_sku}>{p.supplier_sku || '\u2014'}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={p.supplier_sku}>{p.supplier_sku || '—'}</td>
                       <td className="px-3 py-2.5 text-center">
-                        <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{p.brand || '\u2014'}</span>
+                        <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{p.brand || '—'}</span>
                       </td>
                       <td className="px-3 py-2.5 text-left text-slate-700">
-                        <span className="block truncate" title={p.model_name}>{p.model_name || '\u2014'}</span>
+                        <span className="block truncate" title={p.model_name}>{p.model_name || '—'}</span>
                       </td>
                       <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(p.price_before)}</td>
                       <td className="px-3 py-2.5 text-center font-mono font-semibold" style={{color:'#f97316'}}>{fmt(p.price_after)}</td>
