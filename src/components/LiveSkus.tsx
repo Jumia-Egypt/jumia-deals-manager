@@ -158,7 +158,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                 <col style={{width:'160px'}} />
               </colgroup>
               <thead className="sticky top-0 z-10">
-                <tr className="text-white" style={{background:'linear-gradient(90deg,#f97316,#fb923c)'}}>
+                <tr className="bg-white border-b-2 border-orange-400 text-orange-500">
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">Select</th>
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">SKU</th>
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">Supplier SKU</th>
@@ -174,7 +174,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                 {filtered.map((p) => {
                   const isSel = selectedSkus.has(p.sku);
                   return (
-                    <tr key={p.sku} className={`transition-colors ${isSel ? 'bg-orange-50/70' : 'bg-white hover:bg-orange-50/30'}`}>
+                    <tr key={p.sku} className={`transition-colors duration-100 ${isSel ? 'bg-orange-50 hover:bg-orange-100/70' : 'bg-white hover:bg-orange-50'}`}>
                       <td className="px-3 py-2.5 text-center">
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input type="checkbox" checked={isSel} onChange={() => toggleOne(p.sku)} className="sr-only peer" />
