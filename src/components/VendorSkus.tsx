@@ -1,7 +1,88 @@
 import { useState, useEffect, useRef } from 'react';
-import { UploadCloud, Save, Search, ChevronDown, Check, Users, Trash2, RefreshCw } from 'lucide-react';
+import { UploadCloud, Save, Search, ChevronDown, Check, Users, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
+/* ── Dot Spinner ─────────────────────────────── */
+const DOT_SPINNER_CSS = `
+  .dot-spinner{--uib-size:2.8rem;--uib-speed:.9s;--uib-color:#f97316;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size);}
+  .dot-spinner__dot{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:flex-start;height:100%;width:100%;}
+  .dot-spinner__dot::before{content:'';height:20%;width:20%;border-radius:50%;background-color:var(--uib-color);transform:scale(0);opacity:0.5;animation:pulse0112 calc(var(--uib-speed)*1.111) ease-in-out infinite;box-shadow:0 0 20px rgba(249,115,22,0.3);}
+  .dot-spinner__dot:nth-child(2){transform:rotate(45deg);}
+  .dot-spinner__dot:nth-child(2)::before{animation-delay:calc(var(--uib-speed)*-0.875);}
+  .dot-spinner__dot:nth-child(3){transform:rotate(90deg);}
+  .dot-spinner__dot:nth-child(3)::before{animation-delay:calc(var(--uib-speed)*-0.75);}
+  .dot-spinner__dot:nth-child(4){transform:rotate(135deg);}
+  .dot-spinner__dot:nth-child(4)::before{animation-delay:calc(var(--uib-speed)*-0.625);}
+  .dot-spinner__dot:nth-child(5){transform:rotate(180deg);}
+  .dot-spinner__dot:nth-child(5)::before{animation-delay:calc(var(--uib-speed)*-0.5);}
+  .dot-spinner__dot:nth-child(6){transform:rotate(225deg);}
+  .dot-spinner__dot:nth-child(6)::before{animation-delay:calc(var(--uib-speed)*-0.375);}
+  .dot-spinner__dot:nth-child(7){transform:rotate(270deg);}
+  .dot-spinner__dot:nth-child(7)::before{animation-delay:calc(var(--uib-speed)*-0.25);}
+  .dot-spinner__dot:nth-child(8){transform:rotate(315deg);}
+  .dot-spinner__dot:nth-child(8)::before{animation-delay:calc(var(--uib-speed)*-0.125);}
+  @keyframes pulse0112{0%,100%{transform:scale(0);opacity:0.5;}50%{transform:scale(1);opacity:1;}}
+`;
+function DotSpinner({ label = 'Loading…' }: { label?: string }) {
+  return (
+    <>
+      <style>{DOT_SPINNER_CSS}</style>
+      <div className="flex flex-col items-center justify-center gap-4">
+        <div className="dot-spinner">
+          {[...Array(8)].map((_, i) => <div key={i} className="dot-spinner__dot" />)}
+        </div>
+        {label && <p className="text-xs font-medium text-slate-400 animate-pulse">{label}</p>}
+      </div>
+    </>
+  );
+}
+
+/* ── Confirm Modal ───────────────────────────── */
+interface ConfirmModalProps {
+  vendorName: string;
+  skuCount: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+function ConfirmModal({ vendorName, skuCount, onConfirm, onCancel }: ConfirmModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onCancel}>
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+        {/* Icon + title */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-rose-100 p-2.5 rounded-xl flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-rose-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Clear All SKUs?</h2>
+            <p className="text-xs text-slate-500">This action cannot be undone.</p>
+          </div>
+        </div>
+        {/* Body */}
+        <div className="bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 mb-5 text-xs text-slate-700 leading-relaxed">
+          You are about to permanently delete{' '}
+          <span className="font-bold text-rose-700">{skuCount} SKU{skuCount !== 1 ? 's' : ''}</span>{' '}
+          for vendor <span className="font-bold text-rose-700">{vendorName}</span> from Supabase.
+          All product data for this vendor will be lost.
+        </div>
+        {/* Actions */}
+        <div className="flex gap-2 justify-end">
+          <button onClick={onCancel}
+            className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all">
+            Cancel
+          </button>
+          <button onClick={onConfirm}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white transition-all shadow-sm">
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete All SKUs
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Dropdown ────────────────────────────────── */
 interface DropdownProps {
   value: string;
   onChange: (val: string) => void;
@@ -46,6 +127,7 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
   );
 }
 
+/* ── Types ───────────────────────────────────── */
 interface ParsedRow { sku: string; supplier_sku: string; brand: string; model_name: string; price_before: number; price_after: number; live_stock: number; }
 interface Vendor { id: string; name: string; email: string; role: string; }
 
@@ -59,6 +141,7 @@ const COL_MAP: Record<string, string> = {
   availablestock:'live_stock', livestock:'live_stock', stock:'live_stock', qty:'live_stock', quantity:'live_stock', availqty:'live_stock',
 };
 
+/* ── Main Component ──────────────────────────── */
 export default function VendorSkus() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
@@ -69,6 +152,7 @@ export default function VendorSkus() {
   const [brandFilter, setBrandFilter] = useState('');
   const [saving, setSaving] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -80,12 +164,10 @@ export default function VendorSkus() {
       .catch(() => {});
   }, []);
 
-  // Load existing SKUs from Supabase when vendor changes
+  // Load existing SKUs when vendor changes
   useEffect(() => {
     if (!selectedVendorId) { setRows([]); setIsPendingUpload(false); setMsg(null); return; }
-    setLoadingRows(true);
-    setMsg(null);
-    setIsPendingUpload(false);
+    setLoadingRows(true); setMsg(null); setIsPendingUpload(false);
     fetch(`/api/products?vendor_id=${selectedVendorId}`)
       .then(r => r.json())
       .then(d => setRows(d || []))
@@ -110,9 +192,7 @@ export default function VendorSkus() {
         });
         return out as ParsedRow;
       }).filter(r => r.sku);
-      setRows(parsed);
-      setIsPendingUpload(true);
-      setMsg(null);
+      setRows(parsed); setIsPendingUpload(true); setMsg(null);
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
@@ -135,21 +215,23 @@ export default function VendorSkus() {
     } finally { setSaving(false); }
   };
 
-  const handleClear = async () => {
-    if (!selectedVendorId) return;
-    if (!window.confirm('Delete ALL SKUs for this vendor from Supabase? This cannot be undone.')) return;
+  const handleClear = () => { setShowConfirm(true); };
+
+  const doClear = async () => {
+    setShowConfirm(false);
     setClearing(true); setMsg(null);
     try {
       const res = await fetch(`/api/products?vendor_id=${selectedVendorId}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
-      setRows([]);
-      setIsPendingUpload(false);
+      setRows([]); setIsPendingUpload(false);
       setMsg({ type: 'ok', text: 'All SKUs deleted from Supabase.' });
     } catch (e: any) {
       setMsg({ type: 'err', text: e.message });
     } finally { setClearing(false); }
   };
+
+  const selectedVendor = vendors.find(v => v.id === selectedVendorId);
 
   const brands = Array.from(new Set(rows.map(r => r.brand).filter(Boolean))).sort();
   const filtered = rows.filter(r => {
@@ -168,7 +250,17 @@ export default function VendorSkus() {
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-50 font-sans p-6">
-      {/* Header */}
+      {/* Confirm Modal */}
+      {showConfirm && selectedVendor && (
+        <ConfirmModal
+          vendorName={selectedVendor.name}
+          skuCount={rows.length}
+          onConfirm={doClear}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
+
+      {/* Page header */}
       <div className="mb-5 flex items-center gap-3">
         <div className="bg-gradient-to-br from-orange-100 to-orange-50 p-2.5 rounded-xl shadow-sm border border-orange-200">
           <Users className="w-5 h-5 text-orange-600" />
@@ -259,9 +351,8 @@ export default function VendorSkus() {
               <p className="text-xs font-semibold">Select a vendor to view their SKUs.</p>
             </div>
           ) : loadingRows ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <div className="animate-spin h-7 w-7 border-2 border-orange-500 border-t-transparent rounded-full" />
-              <p className="text-xs text-slate-400 animate-pulse">Loading SKUs…</p>
+            <div className="flex items-center justify-center h-full">
+              <DotSpinner label="Loading SKUs…" />
             </div>
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-slate-400">
