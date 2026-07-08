@@ -302,7 +302,7 @@ export default function VendorSkus() {
                     <td className="px-3 py-2.5 text-center">
                       <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || '—'}</span>
                     </td>
-                    <td className="px-3 py-2.5 text-center text-slate-700">
+                    <td className="px-3 py-2.5 text-left text-slate-700">
                       <span className="block truncate" title={r.model_name}>{r.model_name || '—'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(r.price_before)}</td>
