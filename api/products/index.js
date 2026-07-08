@@ -2,50 +2,68 @@ const { supabase } = require('../_supabase.js');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET: return products for a vendor
+  // GET /api/products?vendor_id=xxx
   if (req.method === 'GET') {
     const { vendor_id } = req.query;
     if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
     const { data, error } = await supabase
       .from('products')
-      .select('sku, supplier_sku, brand, name, model_name, live_price, best_price, live_stock')
+      .select('sku, supplier_sku, brand, model_name, live_stock, live_price, best_price, vendor_id')
       .eq('vendor_id', vendor_id)
-      .order('created_at', { ascending: false });
+      .order('sku', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
-    return res.json(data || []);
+    // Map DB columns → frontend field names
+    const mapped = (data || []).map(p => ({
+      sku:          p.sku,
+      supplier_sku: p.supplier_sku || '',
+      brand:        p.brand || '',
+      model_name:   p.model_name || '',
+      price_before: parseFloat(p.best_price) || 0,
+      price_after:  parseFloat(p.live_price) || 0,
+      live_stock:   parseInt(p.live_stock) || 0,
+    }));
+    return res.json(mapped);
   }
 
-  // POST: bulk upsert products for a vendor
+  // POST /api/products  { products: [...] }
   if (req.method === 'POST') {
-    const { vendor_id, products } = req.body || {};
-    if (!vendor_id || !Array.isArray(products) || products.length === 0)
-      return res.status(400).json({ error: 'vendor_id and products array required' });
+    const { products } = req.body || {};
+    if (!products || !Array.isArray(products) || products.length === 0)
+      return res.status(400).json({ error: 'products array required' });
 
     const rows = products.map(p => ({
-      sku: (p.sku || '').toString().trim(),
-      supplier_sku: (p.supplier_sku || '').toString().trim(),
-      brand: (p.brand || '').toString().trim(),
-      name: (p.model_name || p.name || '').toString().trim(),
-      model_name: (p.model_name || p.name || '').toString().trim(),
-      category: (p.category || 'General').toString().trim(),
-      best_price: parseFloat(p.price_before || p.best_price || 0) || 0,
-      live_price: parseFloat(p.price_after || p.live_price || 0) || 0,
-      live_stock: parseInt(p.live_stock || p.stock || 0) || 0,
-      vendor_id,
-      updated_at: new Date().toISOString()
+      sku:          String(p.sku).trim(),
+      supplier_sku: p.supplier_sku || null,
+      brand:        p.brand || null,
+      model_name:   p.model_name || null,
+      live_price:   parseFloat(p.price_after)  || null,
+      best_price:   parseFloat(p.price_before) || null,
+      live_stock:   parseInt(p.live_stock)     || 0,
+      vendor_id:    p.vendor_id,
     })).filter(r => r.sku);
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('products')
-      .upsert(rows, { onConflict: 'sku' })
-      .select('sku');
+      .upsert(rows, { onConflict: 'sku' });
 
     if (error) return res.status(500).json({ error: error.message });
-    return res.json({ success: true, count: data?.length || rows.length });
+    return res.json({ success: true, count: rows.length });
+  }
+
+  // DELETE /api/products?vendor_id=xxx  — removes all SKUs for this vendor
+  if (req.method === 'DELETE') {
+    const { vendor_id } = req.query;
+    if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('vendor_id', vendor_id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
