@@ -284,7 +284,7 @@ export default function VendorSkus() {
                 <col style={{width:'70px'}} />
               </colgroup>
               <thead className="sticky top-0 z-10">
-                <tr className="text-white" style={{background:'linear-gradient(90deg,#f97316,#fb923c)'}}>
+                <tr className="bg-white border-b-2 border-orange-400 text-orange-500">
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">SKU</th>
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">Supplier SKU</th>
                   <th className="px-3 py-3 text-center font-semibold tracking-wide">Brand</th>
@@ -296,7 +296,7 @@ export default function VendorSkus() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((r, i) => (
-                  <tr key={`${r.sku}-${i}`} className={i % 2 === 0 ? 'bg-white hover:bg-orange-50/30' : 'bg-slate-50/40 hover:bg-orange-50/30'}>
+                  <tr key={`${r.sku}-${i}`} className={`transition-colors duration-100 ${i % 2 === 0 ? 'bg-white hover:bg-orange-50' : 'bg-slate-50/30 hover:bg-orange-50'}`}>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-700">{r.sku}</td>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || '—'}</td>
                     <td className="px-3 py-2.5 text-center">
