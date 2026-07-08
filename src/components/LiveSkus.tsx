@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Package, Search, ChevronDown, Check } from 'lucide-react';
 
-/* ── Dot Spinner ─────────────────────────────── */
+/* ââ Dot Spinner âââââââââââââââââââââââââââââââ */
 const DOT_SPINNER_CSS = `
   .dot-spinner{--uib-size:2.8rem;--uib-speed:.9s;--uib-color:#f97316;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size);}
   .dot-spinner__dot{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:flex-start;height:100%;width:100%;}
@@ -22,7 +22,7 @@ const DOT_SPINNER_CSS = `
   .dot-spinner__dot:nth-child(8)::before{animation-delay:calc(var(--uib-speed)*-0.125);}
   @keyframes pulse0112{0%,100%{transform:scale(0);opacity:0.5;}50%{transform:scale(1);opacity:1;}}
 `;
-function DotSpinner({ label = 'Loading…' }: { label?: string }) {
+function DotSpinner({ label = 'Loadingâ¦' }: { label?: string }) {
   return (
     <>
       <style>{DOT_SPINNER_CSS}</style>
@@ -30,13 +30,13 @@ function DotSpinner({ label = 'Loading…' }: { label?: string }) {
         <div className="dot-spinner">
           {[...Array(8)].map((_, i) => <div key={i} className="dot-spinner__dot" />)}
         </div>
-        {label && <p className="text-xs font-medium text-slate-400 animate-pulse">{label}</p>}
+        {label && }
       </div>
     </>
   );
 }
 
-/* ── Dropdown ────────────────────────────────── */
+/* ââ Dropdown ââââââââââââââââââââââââââââââââââ */
 interface DropdownProps {
   value: string;
   onChange: (val: string) => void;
@@ -81,12 +81,12 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
   );
 }
 
-/* ── Types ───────────────────────────────────── */
+/* ââ Types âââââââââââââââââââââââââââââââââââââ */
 interface Product { sku: string; supplier_sku: string; brand: string; model_name: string; price_before: number; price_after: number; live_stock: number; }
 interface Campaign { id: string; name: string; status: string; }
 interface LiveSkusProps { vendorId: string; }
 
-/* ── Main Component ──────────────────────────── */
+/* ââ Main Component ââââââââââââââââââââââââââââ */
 export default function LiveSkus({ vendorId }: LiveSkusProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -120,7 +120,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
 
   const toggleOne = (sku: string) => setSelectedSkus(prev => { const n = new Set(prev); n.has(sku) ? n.delete(sku) : n.add(sku); return n; });
 
-  const fmt = (n: number | null | undefined) => n != null && n > 0 ? `EGP ${n.toLocaleString()}` : '—';
+  const fmt = (n: number | null | undefined) => n != null && n > 0 ? `EGP ${n.toLocaleString()}` : 'â';
   const stockBadge = (qty: number) => {
     if (!qty && qty !== 0) return 'bg-slate-100 text-slate-600 border-slate-200';
     if (qty > 50) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -168,7 +168,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
         <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <DotSpinner label="Loading your SKUs…" />
+              <div className="h-8 w-8 rounded-full border-2 border-orange-100 border-t-orange-400 animate-spin" />
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full p-6">
@@ -219,12 +219,12 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                         </label>
                       </td>
                       <td className="px-3 py-2.5 text-center font-mono text-slate-700">{p.sku}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={p.supplier_sku}>{p.supplier_sku || '—'}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={p.supplier_sku}>{p.supplier_sku || 'â'}</td>
                       <td className="px-3 py-2.5 text-center">
-                        <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{p.brand || '—'}</span>
+                        <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{p.brand || 'â'}</span>
                       </td>
                       <td className="px-3 py-2.5 text-left text-slate-700">
-                        <span className="block truncate" title={p.model_name}>{p.model_name || '—'}</span>
+                        <span className="block truncate" title={p.model_name}>{p.model_name || 'â'}</span>
                       </td>
                       <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(p.price_before)}</td>
                       <td className="px-3 py-2.5 text-center font-mono font-semibold" style={{color:'#f97316'}}>{fmt(p.price_after)}</td>
