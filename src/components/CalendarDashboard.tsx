@@ -26,6 +26,19 @@ interface CalendarDashboardProps {
 
 
 
+function Loader() {
+  return (
+    <>
+      <style>{'.jumia-loader{--dim:2.2rem;background-color:#f97316;opacity:0.55;width:var(--dim);height:var(--dim);border-radius:50%;display:grid;place-items:center;animation:spin_412 5s infinite;} .jumia-loader svg{transform:translateY(-1px) scale(.65);} @keyframes spin_412{0%{transform:rotate(0) scale(1);}50%{transform:rotate(720deg) scale(1.2);}100%{transform:rotate(0) scale(1);}}'}</style>
+      <div className="jumia-loader">
+        <svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg">
+          <path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/>
+        </svg>
+      </div>
+    </>
+  );
+}
+
 export function CalendarDashboard({ onSelectCampaign, userRole }: CalendarDashboardProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -55,17 +68,10 @@ export function CalendarDashboard({ onSelectCampaign, userRole }: CalendarDashbo
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-          <p className="text-sm font-medium text-slate-500">Loading calendar...</p>
-        </div>
+        <Loader />
       </div>
     );
   }
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
