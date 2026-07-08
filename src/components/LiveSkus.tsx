@@ -186,7 +186,7 @@ export default function LiveSkus({ vendorId }: LiveSkusProps) {
                       <td className="px-3 py-2.5 text-center">
                         <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{p.brand || '\u2014'}</span>
                       </td>
-                      <td className="px-3 py-2.5 text-center text-slate-700">
+                      <td className="px-3 py-2.5 text-left text-slate-700">
                         <span className="block truncate" title={p.model_name}>{p.model_name || '\u2014'}</span>
                       </td>
                       <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(p.price_before)}</td>
