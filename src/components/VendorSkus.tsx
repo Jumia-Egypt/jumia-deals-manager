@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { UploadCloud, Save, Search, ChevronDown, Check, Users } from 'lucide-react';
+import { UploadCloud, Save, Search, ChevronDown, Check, Users, Trash2, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface DropdownProps {
@@ -50,25 +50,29 @@ interface ParsedRow { sku: string; supplier_sku: string; brand: string; model_na
 interface Vendor { id: string; name: string; email: string; role: string; }
 
 const COL_MAP: Record<string, string> = {
-  sku: 'sku', skusimple: 'sku', simple: 'sku', jumiasku: 'sku', simpleusku: 'sku',
-  suppliersku: 'supplier_sku', skusuppliersource: 'supplier_sku', suppliersource: 'supplier_sku', skusupplier: 'supplier_sku', suppsku: 'supplier_sku',
-  brand: 'brand',
-  productname: 'model_name', modelname: 'model_name', name: 'model_name', model: 'model_name', product: 'model_name', title: 'model_name',
-  pricebefore: 'price_before', bestprice: 'price_before', originalprice: 'price_before',
-  priceafter: 'price_after', liveprice: 'price_after', saleprice: 'price_after',
-  availablestock: 'live_stock', livestock: 'live_stock', stock: 'live_stock', qty: 'live_stock', quantity: 'live_stock', availqty: 'live_stock',
+  sku:'sku', skusimple:'sku', simple:'sku', jumiasku:'sku', simpleusku:'sku',
+  suppliersku:'supplier_sku', skusuppliersource:'supplier_sku', suppliersource:'supplier_sku', skusupplier:'supplier_sku', suppsku:'supplier_sku',
+  brand:'brand',
+  productname:'model_name', modelname:'model_name', name:'model_name', model:'model_name', product:'model_name', title:'model_name',
+  pricebefore:'price_before', bestprice:'price_before', originalprice:'price_before',
+  priceafter:'price_after', liveprice:'price_after', saleprice:'price_after',
+  availablestock:'live_stock', livestock:'live_stock', stock:'live_stock', qty:'live_stock', quantity:'live_stock', availqty:'live_stock',
 };
 
 export default function VendorSkus() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [loadingRows, setLoadingRows] = useState(false);
+  const [isPendingUpload, setIsPendingUpload] = useState(false);
   const [search, setSearch] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Load vendors
   useEffect(() => {
     fetch('/api/vendors')
       .then(r => r.json())
@@ -76,16 +80,29 @@ export default function VendorSkus() {
       .catch(() => {});
   }, []);
 
+  // Load existing SKUs from Supabase when vendor changes
+  useEffect(() => {
+    if (!selectedVendorId) { setRows([]); setIsPendingUpload(false); setMsg(null); return; }
+    setLoadingRows(true);
+    setMsg(null);
+    setIsPendingUpload(false);
+    fetch(`/api/products?vendor_id=${selectedVendorId}`)
+      .then(r => r.json())
+      .then(d => setRows(d || []))
+      .catch(() => setRows([]))
+      .finally(() => setLoadingRows(false));
+  }, [selectedVendorId]);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = ev => {
       const wb = XLSX.read(ev.target?.result, { type: 'binary' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const raw: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
       const parsed = raw.map(r => {
-        const out: any = { sku: '', supplier_sku: '', brand: '', model_name: '', price_before: 0, price_after: 0, live_stock: 0 };
+        const out: any = { sku:'', supplier_sku:'', brand:'', model_name:'', price_before:0, price_after:0, live_stock:0 };
         Object.keys(r).forEach(k => {
           const norm = k.toLowerCase().replace(/[^a-z0-9]/g, '');
           const mapped = COL_MAP[norm];
@@ -94,7 +111,8 @@ export default function VendorSkus() {
         return out as ParsedRow;
       }).filter(r => r.sku);
       setRows(parsed);
-      setSaveMsg(null);
+      setIsPendingUpload(true);
+      setMsg(null);
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
@@ -102,19 +120,35 @@ export default function VendorSkus() {
 
   const handleSave = async () => {
     if (!selectedVendorId || rows.length === 0) return;
-    setSaving(true); setSaveMsg(null);
+    setSaving(true); setMsg(null);
     try {
-      const payload = rows.map(r => ({ ...r, vendor_id: selectedVendorId }));
       const res = await fetch('/api/products', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products: payload }),
+        body: JSON.stringify({ products: rows.map(r => ({ ...r, vendor_id: selectedVendorId })) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
-      setSaveMsg({ type: 'ok', text: `${rows.length} products saved successfully.` });
+      setMsg({ type: 'ok', text: `${rows.length} products saved to Supabase.` });
+      setIsPendingUpload(false);
     } catch (e: any) {
-      setSaveMsg({ type: 'err', text: e.message });
+      setMsg({ type: 'err', text: e.message });
     } finally { setSaving(false); }
+  };
+
+  const handleClear = async () => {
+    if (!selectedVendorId) return;
+    if (!window.confirm('Delete ALL SKUs for this vendor from Supabase? This cannot be undone.')) return;
+    setClearing(true); setMsg(null);
+    try {
+      const res = await fetch(`/api/products?vendor_id=${selectedVendorId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      setRows([]);
+      setIsPendingUpload(false);
+      setMsg({ type: 'ok', text: 'All SKUs deleted from Supabase.' });
+    } catch (e: any) {
+      setMsg({ type: 'err', text: e.message });
+    } finally { setClearing(false); }
   };
 
   const brands = Array.from(new Set(rows.map(r => r.brand).filter(Boolean))).sort();
@@ -124,7 +158,7 @@ export default function VendorSkus() {
     return mb && ms;
   });
 
-  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : '\u2014';
+  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : '—';
   const stockBadge = (qty: number) => {
     if (!qty && qty !== 0) return 'bg-slate-100 text-slate-600 border-slate-200';
     if (qty > 50) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -141,13 +175,13 @@ export default function VendorSkus() {
         </div>
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900">Vendor SKUs</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Upload a product sheet for a vendor and save it to the catalog.</p>
+          <p className="text-xs text-slate-500 mt-0.5">View, upload, or clear a vendor's product catalog.</p>
         </div>
       </div>
 
-      {/* Controls card */}
+      {/* Controls */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 mb-4 flex flex-wrap items-center gap-3">
-        <div className="w-64">
+        <div className="w-72">
           <Dropdown
             value={selectedVendorId}
             onChange={setSelectedVendorId}
@@ -156,28 +190,51 @@ export default function VendorSkus() {
             className="rounded-xl py-2.5 px-3.5"
           />
         </div>
-        <button type="button" onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all shadow-sm">
-          <UploadCloud className="w-4 h-4" />
-          {rows.length > 0 ? `Replace file (${rows.length} rows)` : 'Upload CSV / XLSX'}
-        </button>
-        <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFile} />
-        {rows.length > 0 && selectedVendorId && (
-          <button type="button" onClick={handleSave} disabled={saving}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving…' : `Save ${rows.length} products`}
-          </button>
+
+        {selectedVendorId && (
+          <>
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all shadow-sm">
+              <UploadCloud className="w-4 h-4" />
+              {isPendingUpload ? `Replace (${rows.length} rows)` : 'Upload CSV / XLSX'}
+            </button>
+            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFile} />
+
+            {isPendingUpload && (
+              <button type="button" onClick={handleSave} disabled={saving}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                <Save className="w-4 h-4" />
+                {saving ? 'Saving…' : `Save ${rows.length} products`}
+              </button>
+            )}
+
+            {rows.length > 0 && !isPendingUpload && (
+              <button type="button" onClick={handleClear} disabled={clearing}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed ml-auto">
+                <Trash2 className="w-3.5 h-3.5" />
+                {clearing ? 'Deleting…' : `Clear All ${rows.length} SKUs`}
+              </button>
+            )}
+          </>
         )}
-        {saveMsg && (
-          <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${saveMsg.type === 'ok' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-            {saveMsg.text}
+
+        {msg && (
+          <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${msg.type === 'ok' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+            {msg.text}
           </span>
         )}
       </div>
 
       {/* Table card */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col flex-1 overflow-hidden min-h-0">
+        {/* Pending upload banner */}
+        {isPendingUpload && (
+          <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-700 text-xs font-semibold flex items-center gap-2">
+            <RefreshCw className="w-3.5 h-3.5" />
+            {rows.length} rows parsed from file — click <strong>Save</strong> to persist to Supabase.
+          </div>
+        )}
+
         {/* Filters */}
         {rows.length > 0 && (
           <div className="px-5 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
@@ -196,14 +253,24 @@ export default function VendorSkus() {
         )}
 
         <div className="flex-1 overflow-auto">
-          {rows.length === 0 ? (
+          {!selectedVendorId ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-slate-400">
+              <Users className="w-10 h-10 text-slate-200" />
+              <p className="text-xs font-semibold">Select a vendor to view their SKUs.</p>
+            </div>
+          ) : loadingRows ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <div className="animate-spin h-7 w-7 border-2 border-orange-500 border-t-transparent rounded-full" />
+              <p className="text-xs text-slate-400 animate-pulse">Loading SKUs…</p>
+            </div>
+          ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-slate-400">
               <UploadCloud className="w-10 h-10 text-slate-200" />
-              <p className="text-xs font-semibold">{!selectedVendorId ? 'Select a vendor first, then upload a file.' : 'Upload a CSV or XLSX file to preview products.'}</p>
+              <p className="text-xs font-semibold">No products found. Upload a CSV or XLSX file to add products.</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-slate-400">
-              <p className="text-xs font-semibold">No rows match your filters.</p>
+            <div className="flex flex-col items-center justify-center h-full gap-2 p-6">
+              <p className="text-xs font-semibold text-slate-500">No rows match your filters.</p>
             </div>
           ) : (
             <table className="w-full text-xs whitespace-nowrap min-w-[900px]">
@@ -231,12 +298,12 @@ export default function VendorSkus() {
                 {filtered.map((r, i) => (
                   <tr key={`${r.sku}-${i}`} className={i % 2 === 0 ? 'bg-white hover:bg-orange-50/30' : 'bg-slate-50/40 hover:bg-orange-50/30'}>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-700">{r.sku}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || '\u2014'}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || '—'}</td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || '\u2014'}</span>
+                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || '—'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center text-slate-700">
-                      <span className="block truncate" title={r.model_name}>{r.model_name || '\u2014'}</span>
+                      <span className="block truncate" title={r.model_name}>{r.model_name || '—'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(r.price_before)}</td>
                     <td className="px-3 py-2.5 text-center font-mono font-semibold" style={{color:'#f97316'}}>{fmt(r.price_after)}</td>
