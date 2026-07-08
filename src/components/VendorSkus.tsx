@@ -2,42 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { UploadCloud, Save, Search, ChevronDown, Check, Users, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-/* ââ Dot Spinner âââââââââââââââââââââââââââââââ */
-const DOT_SPINNER_CSS = `
-  .dot-spinner{--uib-size:2.8rem;--uib-speed:.9s;--uib-color:#f97316;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size);}
-  .dot-spinner__dot{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:flex-start;height:100%;width:100%;}
-  .dot-spinner__dot::before{content:'';height:20%;width:20%;border-radius:50%;background-color:var(--uib-color);transform:scale(0);opacity:0.5;animation:pulse0112 calc(var(--uib-speed)*1.111) ease-in-out infinite;box-shadow:0 0 20px rgba(249,115,22,0.3);}
-  .dot-spinner__dot:nth-child(2){transform:rotate(45deg);}
-  .dot-spinner__dot:nth-child(2)::before{animation-delay:calc(var(--uib-speed)*-0.875);}
-  .dot-spinner__dot:nth-child(3){transform:rotate(90deg);}
-  .dot-spinner__dot:nth-child(3)::before{animation-delay:calc(var(--uib-speed)*-0.75);}
-  .dot-spinner__dot:nth-child(4){transform:rotate(135deg);}
-  .dot-spinner__dot:nth-child(4)::before{animation-delay:calc(var(--uib-speed)*-0.625);}
-  .dot-spinner__dot:nth-child(5){transform:rotate(180deg);}
-  .dot-spinner__dot:nth-child(5)::before{animation-delay:calc(var(--uib-speed)*-0.5);}
-  .dot-spinner__dot:nth-child(6){transform:rotate(225deg);}
-  .dot-spinner__dot:nth-child(6)::before{animation-delay:calc(var(--uib-speed)*-0.375);}
-  .dot-spinner__dot:nth-child(7){transform:rotate(270deg);}
-  .dot-spinner__dot:nth-child(7)::before{animation-delay:calc(var(--uib-speed)*-0.25);}
-  .dot-spinner__dot:nth-child(8){transform:rotate(315deg);}
-  .dot-spinner__dot:nth-child(8)::before{animation-delay:calc(var(--uib-speed)*-0.125);}
-  @keyframes pulse0112{0%,100%{transform:scale(0);opacity:0.5;}50%{transform:scale(1);opacity:1;}}
-`;
-function DotSpinner({ label = 'Loadingâ¦' }: { label?: string }) {
-  return (
-    <>
-      <style>{DOT_SPINNER_CSS}</style>
-      <div className="flex flex-col items-center justify-center gap-4">
-        <div className="dot-spinner">
-          {[...Array(8)].map((_, i) => <div key={i} className="dot-spinner__dot" />)}
-        </div>
-        {label && }
-      </div>
-    </>
-  );
-}
 
-/* ââ Confirm Modal âââââââââââââââââââââââââââââ */
+/* ── Confirm Modal ───────────────────────────── */
 interface ConfirmModalProps {
   vendorName: string;
   skuCount: number;
@@ -82,7 +48,7 @@ function ConfirmModal({ vendorName, skuCount, onConfirm, onCancel }: ConfirmModa
   );
 }
 
-/* ââ Dropdown ââââââââââââââââââââââââââââââââââ */
+/* ── Dropdown ────────────────────────────────── */
 interface DropdownProps {
   value: string;
   onChange: (val: string) => void;
@@ -127,7 +93,7 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
   );
 }
 
-/* ââ Types âââââââââââââââââââââââââââââââââââââ */
+/* ── Types ───────────────────────────────────── */
 interface ParsedRow { sku: string; supplier_sku: string; brand: string; model_name: string; price_before: number; price_after: number; live_stock: number; }
 interface Vendor { id: string; name: string; email: string; role: string; }
 
@@ -141,7 +107,7 @@ const COL_MAP: Record<string, string> = {
   availablestock:'live_stock', livestock:'live_stock', stock:'live_stock', qty:'live_stock', quantity:'live_stock', availqty:'live_stock',
 };
 
-/* ââ Main Component ââââââââââââââââââââââââââââ */
+/* ── Main Component ──────────────────────────── */
 export default function VendorSkus() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
@@ -240,7 +206,7 @@ export default function VendorSkus() {
     return mb && ms;
   });
 
-  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : 'â';
+  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : '—';
   const stockBadge = (qty: number) => {
     if (!qty && qty !== 0) return 'bg-slate-100 text-slate-600 border-slate-200';
     if (qty > 50) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -296,7 +262,7 @@ export default function VendorSkus() {
               <button type="button" onClick={handleSave} disabled={saving}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
                 <Save className="w-4 h-4" />
-                {saving ? 'Savingâ¦' : `Save ${rows.length} products`}
+                {saving ? 'Saving…' : `Save ${rows.length} products`}
               </button>
             )}
 
@@ -304,7 +270,7 @@ export default function VendorSkus() {
               <button type="button" onClick={handleClear} disabled={clearing}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed ml-auto">
                 <Trash2 className="w-3.5 h-3.5" />
-                {clearing ? 'Deletingâ¦' : `Clear All ${rows.length} SKUs`}
+                {clearing ? 'Deleting…' : `Clear All ${rows.length} SKUs`}
               </button>
             )}
           </>
@@ -323,7 +289,7 @@ export default function VendorSkus() {
         {isPendingUpload && (
           <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-700 text-xs font-semibold flex items-center gap-2">
             <RefreshCw className="w-3.5 h-3.5" />
-            {rows.length} rows parsed from file â click <strong>Save</strong> to persist to Supabase.
+            {rows.length} rows parsed from file — click <strong>Save</strong> to persist to Supabase.
           </div>
         )}
 
@@ -389,12 +355,12 @@ export default function VendorSkus() {
                 {filtered.map((r, i) => (
                   <tr key={`${r.sku}-${i}`} className={`transition-colors duration-100 ${i % 2 === 0 ? 'bg-white hover:bg-orange-50' : 'bg-slate-50/30 hover:bg-orange-50'}`}>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-700">{r.sku}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || 'â'}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || '—'}</td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || 'â'}</span>
+                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || '—'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-left text-slate-700">
-                      <span className="block truncate" title={r.model_name}>{r.model_name || 'â'}</span>
+                      <span className="block truncate" title={r.model_name}>{r.model_name || '—'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(r.price_before)}</td>
                     <td className="px-3 py-2.5 text-center font-mono font-semibold" style={{color:'#f97316'}}>{fmt(r.price_after)}</td>
