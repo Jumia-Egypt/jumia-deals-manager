@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     // Return name as model_name so the frontend works without changes
-    return res.json((data || []).map(r => ({ ...r, model_name: r.name })));
+    return res.json((data || []).map(r => ({ ...r, model_name: r.name, price_before: r.best_price, price_after: r.live_price })));
   }
 
   // POST /api/products  { products: [...] }
