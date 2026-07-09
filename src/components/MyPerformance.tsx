@@ -20,46 +20,47 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
   }, [vendorId]);
 
   useEffect(() => {
-    // Read from localStorage to share data with Admin tool (VendorManagement)
-    const saved = localStorage.getItem('vendorsData');
-    if (saved) {
-      const vendors = JSON.parse(saved);
-      // Find the logged in vendor, fallback to the first one if not specified or not found
-      const currentVendor = vendors.find((v: any) => v.id === vendorId) || vendors[0];
-      setVendorData(currentVendor);
-    } else {
-      // Setup default fallback in case no data in localStorage yet
-      const defaultVendors = [
-        {
-          id: '884920',
-          name: 'Tech Store Egypt',
-          targetGMV: 500000,
-          achievementGMV: 425000,
-          countOfOrders: 1450,
-          grossItemSold: 2005,
-          dailyData: [
-            { date: '1 Jul', gmv: 45000, orders: 150, items: 210 },
-            { date: '2 Jul', gmv: 52000, orders: 180, items: 250 },
-            { date: '3 Jul', gmv: 48000, orders: 165, items: 230 },
-            { date: '4 Jul', gmv: 61000, orders: 210, items: 290 },
-            { date: '5 Jul', gmv: 59000, orders: 195, items: 275 },
-            { date: '6 Jul', gmv: 75000, orders: 260, items: 350 },
-            { date: '7 Jul', gmv: 85000, orders: 290, items: 400 },
-          ]
-        },
-        {
-          id: '884921',
-          name: 'Fashion Hub',
-          targetGMV: 200000,
-          achievementGMV: 180000,
-          countOfOrders: 850,
-          grossItemSold: 1100,
-          dailyData: []
+    if (!vendorId) return;
+
+    // Get vendor name + targetGMV from localStorage (stored by admin panel)
+    let vendorName = 'My Store';
+    let targetGMV = 200000;
+    try {
+      const saved = localStorage.getItem('vendorsData');
+      if (saved) {
+        const vs = JSON.parse(saved);
+        const found = vs.find((v: any) => v.id === vendorId);
+        if (found) { vendorName = found.name || vendorName; targetGMV = found.targetGMV || targetGMV; }
+      }
+    } catch {}
+
+    // Fetch daily performance from Supabase via API
+    fetch(`/api/performance?vendor_id=${vendorId}`)
+      .then(r => r.json())
+      .then(rows => {
+        if (!Array.isArray(rows) || rows.length === 0) {
+          setVendorData({ id: vendorId, name: vendorName, targetGMV, achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [] });
+          return;
         }
-      ];
-      const currentVendor = defaultVendors.find((v: any) => v.id === vendorId) || defaultVendors[0];
-      setVendorData(currentVendor);
-    }
+        const dailyData = rows.map((r: any) => ({
+          date: (() => {
+            try {
+              const d = new Date(r.date + 'T00:00:00');
+              return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            } catch { return r.date; }
+          })(),
+          gmv: Number(r.gmv),
+          orders: Number(r.gross_orders),
+          items: Number(r.gross_items),
+        }));
+        const achievementGMV = dailyData.reduce((s: number, r: any) => s + r.gmv, 0);
+        const countOfOrders  = dailyData.reduce((s: number, r: any) => s + r.orders, 0);
+        const grossItemSold  = dailyData.reduce((s: number, r: any) => s + r.items, 0);
+        setVendorData({ id: vendorId, name: vendorName, targetGMV, achievementGMV, countOfOrders, grossItemSold, dailyData });
+      })
+      .catch(() => {
+        setVendorData({ id: vendorId, name: vendorName, targetGMV, achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [] });
+      });
   }, [vendorId]);
 
   if (!vendorData) {
