@@ -256,7 +256,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           )}
         </div>
 
-        {/* Date Selection Quick Pills */}
         {chartData.length > 0 && (
           <div className="mt-6 flex flex-wrap gap-2 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
             <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider ml-1 mr-2 flex items-center gap-1.5">
@@ -284,7 +283,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           </div>
         )}
 
-        {/* Selected Day Breakdown */}
         <div className="mt-6 pt-6 border-t border-slate-100">
           <AnimatePresence mode="wait">
             {selectedDay ? (
