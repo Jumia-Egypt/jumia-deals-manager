@@ -461,46 +461,90 @@ export function VendorManagement() {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const buffer = e.target?.result as ArrayBuffer;
-          const workbook = XLSX.read(buffer, { cellDates: true, defval: '' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rawRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          // Read as Uint8Array — more reliable than raw ArrayBuffer for SheetJS
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+          const ws = workbook.Sheets[workbook.SheetNames[0]];
 
-          const parsed: any[] = [];
-          for (const row of rawRows) {
-            const dateVal = row['Date'] || row['date'] || row['DATE'] || '';
-            const gmvVal  = row['Gross Merchandise Value'] || row['GMV'] || row['gmv'] || row['achievedGMV'] || 0;
-            const ordVal  = row['# Gross Orders'] || row['Gross Orders'] || row['Orders'] || row['orders'] || 0;
-            const itmVal  = row['# Gross Items'] || row['Gross Items'] || row['Items'] || row['items'] || 0;
+          // Helper: resolve a cell to a clean date {display, iso} or null
+          const resolveDate = (cell: any): { display: string; iso: string } | null => {
+            if (!cell) return null;
 
-            const dateStr = String(dateVal).trim();
-            // Skip empty, Total, NaN, or filter rows
-            if (!dateStr || dateStr === '' || dateStr.toLowerCase() === 'nan' || dateStr.toLowerCase().includes('total') || dateStr.toLowerCase().includes('filter')) continue;
+            let d: Date | null = null;
 
-            const gmv = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
-
-            let displayDate = dateStr;
-            let isoDate = '';
-
-            if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
-              displayDate = dateVal.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-              isoDate = dateVal.toISOString().split('T')[0];
-            } else if (dateStr) {
-              try {
-                const d = new Date(dateStr);
-                if (!isNaN(d.getTime())) {
-                  displayDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-                  isoDate = d.toISOString().split('T')[0];
-                }
-              } catch {}
+            // 1. SheetJS type 'd' — already a Date object
+            if (cell.t === 'd' && cell.v instanceof Date && !isNaN((cell.v as Date).getTime())) {
+              d = cell.v as Date;
             }
 
+            // 2. Excel date serial number (type 'n', typical range 40000-60000 covers 2009–2064)
+            if (!d && cell.t === 'n' && typeof cell.v === 'number' && cell.v > 40000 && cell.v < 60000) {
+              // Excel epoch: Jan 0, 1900. Unix epoch: Jan 1, 1970. Offset = 25569 days.
+              // Excel also counts 1900-02-29 as a real day (bug), so subtract 1 extra.
+              const ms = Math.round((cell.v - 25569) * 86400 * 1000);
+              const candidate = new Date(ms);
+              if (!isNaN(candidate.getTime())) d = candidate;
+            }
+
+            // 3. Formatted text (cell.w) — e.g. "7/1/2026", "2026-07-01", "01-Jul-26"
+            if (!d && cell.w && typeof cell.w === 'string') {
+              const candidate = new Date(cell.w);
+              if (!isNaN(candidate.getTime())) d = candidate;
+            }
+
+            if (!d) return null;
+
+            return {
+              display: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+              iso: d.toISOString().split('T')[0],
+            };
+          };
+
+          // Read header row to find column positions
+          const sheetRange = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+          const headerRow = sheetRange.s.r; // Usually 0
+
+          const colMap: Record<string, number> = {};
+          for (let c = sheetRange.s.c; c <= sheetRange.e.c; c++) {
+            const hCell = ws[XLSX.utils.encode_cell({ r: headerRow, c })];
+            if (hCell && hCell.v) {
+              colMap[String(hCell.v).toLowerCase().trim()] = c;
+            }
+          }
+
+          // Flexible column lookup
+          const dateCol   = colMap['date'] ?? -1;
+          const gmvCol    = Object.entries(colMap).find(([k]) => k.includes('merchandise') || k === 'gmv')?.[1] ?? -1;
+          const ordersCol = Object.entries(colMap).find(([k]) => k.includes('order'))?.[1] ?? -1;
+          const itemsCol  = Object.entries(colMap).find(([k]) => k.includes('item'))?.[1] ?? -1;
+
+          if (dateCol === -1) throw new Error('Could not find a "Date" column in the first row.');
+
+          const getNum = (r: number, c: number): number => {
+            if (c === -1) return 0;
+            const cell = ws[XLSX.utils.encode_cell({ r, c })];
+            if (!cell || cell.v === '' || cell.v == null) return 0;
+            return parseFloat(String(cell.v).replace(/,/g, '')) || 0;
+          };
+
+          const parsed: any[] = [];
+          for (let r = headerRow + 1; r <= sheetRange.e.r; r++) {
+            const dateCell = ws[XLSX.utils.encode_cell({ r, c: dateCol })];
+            if (!dateCell) continue;
+
+            // Skip Total / NaN / filter / blank rows by checking raw value
+            const rawStr = String(dateCell.v ?? '').trim();
+            if (!rawStr || rawStr.toLowerCase() === 'nan' || rawStr.toLowerCase().includes('total') || rawStr.toLowerCase().includes('filter')) continue;
+
+            const dateResult = resolveDate(dateCell);
+            if (!dateResult) continue; // skip rows where date can't be parsed
+
             parsed.push({
-              date: displayDate,
-              _isoDate: isoDate,
-              gmv,
-              orders: parseInt(String(ordVal).replace(/,/g, '')) || 0,
-              items:  parseInt(String(itmVal).replace(/,/g, '')) || 0,
+              date:      dateResult.display,
+              _isoDate:  dateResult.iso,
+              gmv:       getNum(r, gmvCol),
+              orders:    Math.round(getNum(r, ordersCol)),
+              items:     Math.round(getNum(r, itemsCol)),
             });
           }
 
