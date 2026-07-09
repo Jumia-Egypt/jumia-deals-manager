@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, TrendingUp, ShoppingCart, Package, ChevronLeft, Plus, Save, Calendar, Trash2, Mail, Lock, UserPlus, X, Eye, EyeOff, Upload, FileText, Check, AlertCircle, Info } from 'lucide-react';
 import clsx from 'clsx';
-import { format, parse, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 
@@ -13,7 +13,7 @@ interface DailyDatePickerProps {
 function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     if (isOpen) {
       // Small timeout to allow the popup to render before scrolling
@@ -23,7 +23,7 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
     }
   }, [isOpen]);
 
-  
+
   const getInitialDate = () => {
     if (!value) return new Date();
     const parsedDate = Date.parse(value);
@@ -98,7 +98,7 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
         {isOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-            <motion.div 
+            <motion.div
               ref={popupRef}
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -107,9 +107,9 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
               className="absolute z-50 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl p-4 w-64 left-0"
             >
               <div className="flex justify-between items-center mb-3">
-                <button 
-                  type="button" 
-                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
+                <button
+                  type="button"
+                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
                   className="p-1 hover:bg-slate-100 rounded text-slate-600 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -117,9 +117,9 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
                 <span className="font-bold text-slate-800 text-xs uppercase tracking-wider">
                   {format(currentMonth, 'MMMM yyyy')}
                 </span>
-                <button 
-                  type="button" 
-                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
+                <button
+                  type="button"
+                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
                   className="p-1.5 hover:bg-slate-100 rounded text-slate-600 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4 rotate-180" />
@@ -136,7 +136,7 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
                 {Array.from({ length: startOfMonth(currentMonth).getDay() }).map((_, i) => (
                   <div key={`empty-${i}`} />
                 ))}
-                
+
                 {days.map((day, dIdx) => {
                   const isSelected = selectedDate && isSameDay(day, selectedDate);
                   const isTodayDate = isSameDay(day, new Date());
@@ -147,10 +147,10 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
                       onClick={() => handleSelectDate(day)}
                       className={clsx(
                         "h-7 w-7 text-xs rounded-lg flex items-center justify-center font-bold transition-all",
-                        isSelected 
-                          ? "bg-orange-500 text-white" 
-                          : isTodayDate 
-                            ? "border border-orange-500 text-orange-600 hover:bg-orange-50" 
+                        isSelected
+                          ? "bg-orange-500 text-white"
+                          : isTodayDate
+                            ? "border border-orange-500 text-orange-600 hover:bg-orange-50"
                             : "text-slate-700 hover:bg-slate-50"
                       )}
                     >
@@ -249,7 +249,36 @@ export function VendorManagement() {
       })
       .catch(() => {});
   }, []);
-  
+
+  // Load performance data from Supabase when a vendor is selected
+  useEffect(() => {
+    if (!selectedVendorId) return;
+    fetch(`/api/performance?vendor_id=${selectedVendorId}`)
+      .then(r => r.json())
+      .then(rows => {
+        if (!Array.isArray(rows) || rows.length === 0) return;
+        const dailyData = rows.map((r: any) => ({
+          date: (() => {
+            try {
+              const d = new Date(r.date + 'T00:00:00');
+              return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            } catch { return r.date; }
+          })(),
+          gmv: Number(r.gmv),
+          orders: Number(r.gross_orders),
+          items: Number(r.gross_items),
+        }));
+        const totalGmv    = dailyData.reduce((s: number, r: any) => s + r.gmv, 0);
+        const totalOrders = dailyData.reduce((s: number, r: any) => s + r.orders, 0);
+        const totalItems  = dailyData.reduce((s: number, r: any) => s + r.items, 0);
+        setVendors((prev: any) => prev.map((v: any) => v.id === selectedVendorId
+          ? { ...v, dailyData, achievementGMV: totalGmv, countOfOrders: totalOrders, grossItemSold: totalItems }
+          : v
+        ));
+      })
+      .catch(() => {});
+  }, [selectedVendorId]);
+
   // Custom states for adding a new vendor
   const [isAddingVendor, setIsAddingVendor] = useState(false);
   const [newVendorName, setNewVendorName] = useState('');
@@ -301,31 +330,39 @@ export function VendorManagement() {
   };
 
   const handleSubmitInputs = async () => {
-    setShowSubmitSuccess(true);
-    setTimeout(() => setShowSubmitSuccess(false), 4000);
-
-    // Save manually-entered daily data to Supabase
-    const sv = vendors.find((v: any) => v.id === selectedVendorId);
-    if (sv && sv.dailyData?.length > 0) {
-      const toIso = (d: string): string => {
-        try { const p = parse(d, 'd MMM', new Date()); if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
-        try { const p = parseISO(d);                  if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
-        return d;
-      };
-      const apiRows = sv.dailyData.map((r: any) => ({
-        date:         (r as any).isoDate || toIso(r.date),
-        gmv:          r.gmv,
-        gross_orders: r.orders,
-        gross_items:  r.items,
-      }));
+    const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
+    if (selectedVendor?.dailyData?.length > 0) {
       try {
-        await fetch('/api/performance', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vendor_id: selectedVendorId, rows: apiRows }),
-        });
+        const currentYear = new Date().getFullYear();
+        const rows = selectedVendor.dailyData.map((r: any) => {
+          let isoDate = r.date;
+          // Convert display date like "1 Jul" → ISO "2025-07-01"
+          if (/^\d+\s+[A-Za-z]+$/.test(r.date)) {
+            try {
+              const d = new Date(`${r.date} ${currentYear}`);
+              if (!isNaN(d.getTime())) isoDate = d.toISOString().split('T')[0];
+            } catch {}
+          }
+          return {
+            date: isoDate,
+            gmv: Number(r.gmv || 0),
+            gross_orders: Number(r.orders || 0),
+            gross_items: Number(r.items || 0),
+          };
+        }).filter((r: any) => r.date);
+
+        if (rows.length > 0) {
+          await fetch('/api/performance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vendor_id: selectedVendorId, rows }),
+          });
+        }
       } catch {}
     }
+
+    setShowSubmitSuccess(true);
+    setTimeout(() => setShowSubmitSuccess(false), 4000);
   };
 
   const handleOpenEditProfile = (vendor: any) => {
@@ -379,36 +416,38 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (!selectedVendor || parsedDailyData.length === 0) return;
 
-    const totalGmv    = parsedDailyData.reduce((acc, curr) => acc + Number(curr.gmv    || 0), 0);
-    const totalOrders = parsedDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
-    const totalItems  = parsedDailyData.reduce((acc, curr) => acc + Number(curr.items  || 0), 0);
+    // Extract ISO dates before stripping _isoDate helper field
+    const apiRows = parsedDailyData.map(r => ({
+      date: r._isoDate || r.date,
+      gmv: Number(r.gmv || 0),
+      gross_orders: Number(r.orders || 0),
+      gross_items: Number(r.items || 0),
+    })).filter(r => r.date);
+
+    // Strip _isoDate from state (keep display-only fields)
+    const stateDailyData = parsedDailyData.map(({ _isoDate, ...rest }) => rest);
+
+    const totalGmv    = stateDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
+    const totalOrders = stateDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
+    const totalItems  = stateDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
 
     handleUpdateVendor({
       ...selectedVendor,
-      dailyData: parsedDailyData,
+      dailyData: stateDailyData,
       achievementGMV: totalGmv,
-      countOfOrders:  totalOrders,
-      grossItemSold:  totalItems
+      countOfOrders: totalOrders,
+      grossItemSold: totalItems
     });
 
-    // Persist to Supabase
-    const toIso = (d: string): string => {
-      try { const p = parse(d, 'd MMM', new Date()); if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
-      try { const p = parseISO(d);                  if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
-      return d;
-    };
-    const apiRows = parsedDailyData.map((r: any) => ({
-      date:         (r as any).isoDate || toIso(r.date),
-      gmv:          r.gmv,
-      gross_orders: r.orders,
-      gross_items:  r.items,
-    }));
+    // Persist to Supabase via API
     try {
-      await fetch('/api/performance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vendor_id: selectedVendorId, rows: apiRows }),
-      });
+      if (apiRows.length > 0) {
+        await fetch('/api/performance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendor_id: selectedVendorId, rows: apiRows }),
+        });
+      }
     } catch {}
   };
 
@@ -416,56 +455,78 @@ export function VendorManagement() {
     setUploadStatus('idle');
     setUploadMessage('');
 
-    // ── Excel (.xlsx / .xls) ─────────────────────────────────
-    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
     if (isExcel) {
-      const xReader = new FileReader();
-      xReader.onload = async (ev) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
         try {
-          const wb = XLSX.read(ev.target?.result, { type: 'binary', cellDates: true });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const rawRows: any[] = XLSX.utils.sheet_to_json(ws, { raw: false, defval: '' });
+          const buffer = e.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(buffer, { cellDates: true, defval: '' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
-          const parsedDailyData: any[] = [];
+          const parsed: any[] = [];
           for (const row of rawRows) {
-            const dateVal   = String(row['Date'] || row['date'] || '').trim();
-            const gmvVal    = row['Gross Merchandise Value'] || row['GMV']          || row['gmv']    || 0;
-            const ordersVal = row['# Gross Orders']          || row['Gross Orders'] || row['orders'] || 0;
-            const itemsVal  = row['# Gross Items']           || row['Gross Items']  || row['items']  || 0;
+            const dateVal = row['Date'] || row['date'] || row['DATE'] || '';
+            const gmvVal  = row['Gross Merchandise Value'] || row['GMV'] || row['gmv'] || row['achievedGMV'] || 0;
+            const ordVal  = row['# Gross Orders'] || row['Gross Orders'] || row['Orders'] || row['orders'] || 0;
+            const itmVal  = row['# Gross Items'] || row['Gross Items'] || row['Items'] || row['items'] || 0;
 
-            if (!dateVal || /^(total|applied|nan)$/i.test(dateVal.split(' ')[0])) continue;
-            const parsedDate = new Date(dateVal);
-            if (isNaN(parsedDate.getTime())) continue;
+            const dateStr = String(dateVal).trim();
+            // Skip empty, Total, NaN, or filter rows
+            if (!dateStr || dateStr === '' || dateStr.toLowerCase() === 'nan' || dateStr.toLowerCase().includes('total') || dateStr.toLowerCase().includes('filter')) continue;
 
-            const isoDate     = parsedDate.toISOString().split('T')[0];
-            const displayDate = parsedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-            const gmv         = parseFloat(String(gmvVal).replace(/,/g, ''))   || 0;
-            const orders      = parseInt(String(ordersVal).replace(/,/g, ''))  || 0;
-            const items       = parseInt(String(itemsVal).replace(/,/g, ''))   || 0;
+            const gmv = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
 
-            parsedDailyData.push({ date: displayDate, isoDate, gmv, orders, items });
+            let displayDate = dateStr;
+            let isoDate = '';
+
+            if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
+              displayDate = dateVal.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+              isoDate = dateVal.toISOString().split('T')[0];
+            } else if (dateStr) {
+              try {
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                  displayDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                  isoDate = d.toISOString().split('T')[0];
+                }
+              } catch {}
+            }
+
+            parsed.push({
+              date: displayDate,
+              _isoDate: isoDate,
+              gmv,
+              orders: parseInt(String(ordVal).replace(/,/g, '')) || 0,
+              items:  parseInt(String(itmVal).replace(/,/g, '')) || 0,
+            });
           }
 
-          if (parsedDailyData.length === 0) {
+          if (parsed.length === 0) {
             setUploadStatus('error');
-            setUploadMessage('No valid rows found. Expected columns: Date, Gross Merchandise Value, # Gross Orders, # Gross Items.');
+            setUploadMessage('No valid records found. Expected columns: Date, Gross Merchandise Value, # Gross Orders, # Gross Items');
             return;
           }
 
-          await handleBulkImportDailyData(parsedDailyData);
+          await handleBulkImportDailyData(parsed);
           setUploadStatus('success');
-          setUploadMessage(`Successfully imported ${parsedDailyData.length} days from Excel and saved to database!`);
+          setUploadMessage(`Successfully imported ${parsed.length} days from Excel!`);
         } catch (err: any) {
           setUploadStatus('error');
-          setUploadMessage(`Excel error: ${err.message || 'Unknown error'}`);
+          setUploadMessage(`Excel parsing error: ${err.message || 'Unknown error'}`);
         }
       };
-      xReader.onerror = () => { setUploadStatus('error'); setUploadMessage('Failed to read the Excel file.'); };
-      xReader.readAsBinaryString(file);
+      reader.onerror = () => {
+        setUploadStatus('error');
+        setUploadMessage('Failed to read the file.');
+      };
+      reader.readAsArrayBuffer(file);
       return;
     }
 
-    // ── CSV / JSON / TXT ─────────────────────────────────────
+    // CSV / JSON / TXT
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
@@ -583,30 +644,6 @@ export function VendorManagement() {
     localStorage.setItem('vendorsData', JSON.stringify(vendors));
   }, [vendors]);
 
-  // Load performance data from API when a vendor is selected
-  useEffect(() => {
-    if (!selectedVendorId) return;
-    fetch(`/api/performance?vendor_id=${selectedVendorId}`)
-      .then(r => r.json())
-      .then(rows => {
-        if (!Array.isArray(rows) || rows.length === 0) return;
-        const dailyData = rows.map((r: any) => ({
-          date: (() => { try { return new Date(r.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch { return r.date; } })(),
-          isoDate: r.date,
-          gmv: Number(r.gmv),
-          orders: Number(r.gross_orders),
-          items: Number(r.gross_items),
-        }));
-        const totalGmv    = dailyData.reduce((acc: number, cur: any) => acc + cur.gmv, 0);
-        const totalOrders = dailyData.reduce((acc: number, cur: any) => acc + cur.orders, 0);
-        const totalItems  = dailyData.reduce((acc: number, cur: any) => acc + cur.items, 0);
-        setVendors((prev: any[]) => prev.map(v => v.id === selectedVendorId ? {
-          ...v, dailyData, achievementGMV: totalGmv, countOfOrders: totalOrders, grossItemSold: totalItems,
-        } : v));
-      })
-      .catch(() => {});
-  }, [selectedVendorId]);
-
   const selectedVendor = vendors.find(v => v.id === selectedVendorId);
 
   const handleAddVendor = async (e: React.FormEvent) => {
@@ -709,14 +746,14 @@ export function VendorManagement() {
     if (!selectedVendor) return;
     const newDailyData = [...selectedVendor.dailyData];
     newDailyData[index] = { ...newDailyData[index], [field]: value };
-    
+
     // Recalculate totals
     const totalGmv = newDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
     const totalOrders = newDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
     const totalItems = newDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
 
-    handleUpdateVendor({ 
-      ...selectedVendor, 
+    handleUpdateVendor({
+      ...selectedVendor,
       dailyData: newDailyData,
       achievementGMV: totalGmv,
       countOfOrders: totalOrders,
@@ -727,14 +764,14 @@ export function VendorManagement() {
   const handleDeleteDailyData = (index: number) => {
     if (!selectedVendor) return;
     const newDailyData = selectedVendor.dailyData.filter((_, i) => i !== index);
-    
+
     // Recalculate totals
     const totalGmv = newDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
     const totalOrders = newDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
     const totalItems = newDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
 
-    handleUpdateVendor({ 
-      ...selectedVendor, 
+    handleUpdateVendor({
+      ...selectedVendor,
       dailyData: newDailyData,
       achievementGMV: totalGmv,
       countOfOrders: totalOrders,
@@ -747,7 +784,7 @@ export function VendorManagement() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setSelectedVendorId(null)}
               className="p-2 hover:bg-slate-200 rounded-full transition-colors"
             >
@@ -793,8 +830,8 @@ export function VendorManagement() {
                   {Number(selectedVendor.achievementGMV || 0).toLocaleString()} <span className="text-xs font-medium text-slate-400">EGP</span>
                 </h3>
                 <span className="text-xs font-bold text-slate-500">
-                  {selectedVendor.targetGMV > 0 
-                    ? `${((selectedVendor.achievementGMV / selectedVendor.targetGMV) * 100).toFixed(1)}%` 
+                  {selectedVendor.targetGMV > 0
+                    ? `${((selectedVendor.achievementGMV / selectedVendor.targetGMV) * 100).toFixed(1)}%`
                     : '0%'}
                 </span>
               </div>
@@ -862,7 +899,7 @@ export function VendorManagement() {
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    accept=".xlsx,.csv,.json,.txt"
+                    accept=".xlsx,.xls,.csv,.json,.txt"
                     className="hidden"
                   />
                   <div className="p-3 bg-orange-50 rounded-full text-orange-500">
@@ -870,7 +907,7 @@ export function VendorManagement() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-700">Drag & drop your report file here</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, or JSON (.xlsx, .csv, .json)</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, JSON or plain Text (.xlsx, .csv, .json, .txt)</p>
                   </div>
                 </div>
 
@@ -909,7 +946,7 @@ export function VendorManagement() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-slate-800">Daily Achievements</h3>
-              <button 
+              <button
                 onClick={handleAddDailyData}
                 className="bg-orange-50 text-orange-600 hover:bg-orange-100 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors"
               >
@@ -932,14 +969,14 @@ export function VendorManagement() {
                   {selectedVendor.dailyData?.map((day, idx) => (
                     <tr key={idx}>
                       <td className="p-3">
-                        <DailyDatePicker 
+                        <DailyDatePicker
                           value={day.date}
                           onChange={(formatted) => handleUpdateDailyData(idx, 'date', formatted)}
                         />
                       </td>
                       <td className="p-3">
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           placeholder="GMV"
                           value={day.gmv}
                           onChange={(e) => handleUpdateDailyData(idx, 'gmv', Number(e.target.value))}
@@ -950,8 +987,8 @@ export function VendorManagement() {
                         </span>
                       </td>
                       <td className="p-3">
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           placeholder="Orders"
                           value={day.orders}
                           onChange={(e) => handleUpdateDailyData(idx, 'orders', Number(e.target.value))}
@@ -962,8 +999,8 @@ export function VendorManagement() {
                         </span>
                       </td>
                       <td className="p-3">
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           placeholder="Items"
                           value={day.items}
                           onChange={(e) => handleUpdateDailyData(idx, 'items', Number(e.target.value))}
@@ -974,7 +1011,7 @@ export function VendorManagement() {
                         </span>
                       </td>
                       <td className="p-3 text-right">
-                        <button 
+                        <button
                           onClick={() => handleDeleteDailyData(idx)}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
@@ -1011,8 +1048,8 @@ export function VendorManagement() {
                 </span>
                 <span className="font-semibold text-sm">Inputs Submitted & Saved Successfully!</span>
               </div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowSubmitSuccess(false)}
                 className="text-green-500 hover:text-green-700 text-xs font-bold"
               >
@@ -1023,14 +1060,14 @@ export function VendorManagement() {
         </AnimatePresence>
 
         <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-          <button 
+          <button
             type="button"
             onClick={() => setSelectedVendorId(null)}
             className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
           >
             Back to List
           </button>
-          <button 
+          <button
             type="button"
             onClick={handleSubmitInputs}
             className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white rounded-xl text-sm font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-2"
@@ -1097,14 +1134,14 @@ export function VendorManagement() {
                 </div>
 
                 <div className="flex gap-3 justify-end">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setIsEditingProfile(false)}
                     className="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => handleSaveProfile(selectedVendor?.id)}
                     className="px-5 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-sm shadow-orange-500/10"
@@ -1158,7 +1195,7 @@ export function VendorManagement() {
                 <UserPlus className="w-5 h-5 text-orange-500" />
                 Create New Vendor Account
               </h3>
-              
+
               {addVendorError && (
                 <div className="p-3 bg-red-50 text-red-600 text-sm font-semibold rounded-lg">
                   {addVendorError}
@@ -1293,8 +1330,8 @@ export function VendorManagement() {
                 const progress = vendor.targetGMV > 0 ? (vendor.achievementGMV / vendor.targetGMV) * 100 : 0;
                 const isPassVisible = visiblePasswords[vendor.id];
                 return (
-                  <tr 
-                    key={vendor.id} 
+                  <tr
+                    key={vendor.id}
                     className="hover:bg-slate-50 transition-colors cursor-pointer text-sm"
                     onClick={() => setSelectedVendorId(vendor.id)}
                   >
@@ -1333,7 +1370,7 @@ export function VendorManagement() {
                       <div className="flex flex-col items-end gap-1">
                         <span className="font-bold text-slate-900">{vendor.achievementGMV.toLocaleString()}</span>
                         <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full rounded-full ${progress >= 100 ? 'bg-green-500' : 'bg-orange-500'}`}
                             style={{ width: `${Math.min(progress, 100)}%` }}
                           />
@@ -1434,14 +1471,14 @@ export function VendorManagement() {
                 Are you sure you want to delete this vendor account? This action cannot be undone and will permanently remove all associated daily target records and credentials.
               </p>
               <div className="flex gap-3 justify-end">
-                <button 
+                <button
                   type="button"
                   onClick={() => setVendorToDeleteId(null)}
                   className="px-4 py-2 border border-slate-200 rounded-lg font-medium text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={handleConfirmDeleteVendor}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition-colors shadow-sm shadow-red-500/10"
@@ -1511,14 +1548,14 @@ export function VendorManagement() {
               </div>
 
               <div className="flex gap-3 justify-end">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsEditingProfile(false)}
                   className="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => handleSaveProfile(selectedVendor?.id)}
                   className="px-5 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-sm shadow-orange-500/10"
