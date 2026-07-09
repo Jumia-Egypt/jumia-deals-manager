@@ -76,7 +76,7 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
 
   const handleSelectDate = (date: Date) => {
     setSelectedDate(date);
-    const formatted = format(date, 'd MMM');
+    const formatted = format(date, 'yyyy-MM-dd');
     onChange(formatted);
     setIsOpen(false);
   };
@@ -171,7 +171,7 @@ function DailyDatePicker({ value, onChange }: DailyDatePickerProps) {
                   className="w-full py-1.5 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Calendar className="w-3.5 h-3.5" />
-                  Today ({format(new Date(), 'd MMM')})
+                  Today ({format(new Date(), 'yyyy-MM-dd')})
                 </button>
               </div>
             </motion.div>
@@ -258,12 +258,7 @@ export function VendorManagement() {
       .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
         const dailyData = rows.map((r: any) => ({
-          date: (() => {
-            try {
-              const d = new Date(r.date + 'T00:00:00');
-              return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-            } catch { return r.date; }
-          })(),
+          date: r.date, // Supabase returns YYYY-MM-DD — use directly
           gmv: Number(r.gmv),
           orders: Number(r.gross_orders),
           items: Number(r.gross_items),
@@ -333,23 +328,15 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (selectedVendor?.dailyData?.length > 0) {
       try {
-        const currentYear = new Date().getFullYear();
-        const rows = selectedVendor.dailyData.map((r: any) => {
-          let isoDate = r.date;
-          // Convert display date like "1 Jul" → ISO "2025-07-01"
-          if (/^\d+\s+[A-Za-z]+$/.test(r.date)) {
-            try {
-              const d = new Date(`${r.date} ${currentYear}`);
-              if (!isNaN(d.getTime())) isoDate = d.toISOString().split('T')[0];
-            } catch {}
-          }
-          return {
-            date: isoDate,
+        // Dates are already YYYY-MM-DD — use directly
+        const rows = selectedVendor.dailyData
+          .map((r: any) => ({
+            date: r.date,
             gmv: Number(r.gmv || 0),
             gross_orders: Number(r.orders || 0),
             gross_items: Number(r.items || 0),
-          };
-        }).filter((r: any) => r.date);
+          }))
+          .filter((r: any) => r.date);
 
         if (rows.length > 0) {
           await fetch('/api/performance', {
@@ -416,24 +403,14 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (!selectedVendor || parsedDailyData.length === 0) return;
 
-    // Extract ISO dates before stripping _isoDate helper field
-    const apiRows = parsedDailyData.map(r => ({
-      date: r._isoDate || r.date,
-      gmv: Number(r.gmv || 0),
-      gross_orders: Number(r.orders || 0),
-      gross_items: Number(r.items || 0),
-    })).filter(r => r.date);
-
-    // Strip _isoDate from state (keep display-only fields)
-    const stateDailyData = parsedDailyData.map(({ _isoDate, ...rest }) => rest);
-
-    const totalGmv    = stateDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
-    const totalOrders = stateDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
-    const totalItems  = stateDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
+    // date is already YYYY-MM-DD — no conversion needed
+    const totalGmv    = parsedDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
+    const totalOrders = parsedDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
+    const totalItems  = parsedDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
 
     handleUpdateVendor({
       ...selectedVendor,
-      dailyData: stateDailyData,
+      dailyData: parsedDailyData,
       achievementGMV: totalGmv,
       countOfOrders: totalOrders,
       grossItemSold: totalItems
@@ -441,6 +418,15 @@ export function VendorManagement() {
 
     // Persist to Supabase via API
     try {
+      const apiRows = parsedDailyData
+        .map(r => ({
+          date: r.date,
+          gmv: Number(r.gmv || 0),
+          gross_orders: Number(r.orders || 0),
+          gross_items: Number(r.items || 0),
+        }))
+        .filter(r => r.date);
+
       if (apiRows.length > 0) {
         await fetch('/api/performance', {
           method: 'POST',
@@ -455,171 +441,74 @@ export function VendorManagement() {
     setUploadStatus('idle');
     setUploadMessage('');
 
-    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
-
-    if (isExcel) {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        try {
-          // Same pattern as VendorSkus.tsx — proven to work with the SheetJS version in this project
-          const wb = XLSX.read(ev.target?.result, { type: 'binary' });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const rawRows: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
-
-          // Helper: convert Excel date serial, JS Date, or date string → { display, iso }
-          const resolveDate = (val: any): { display: string; iso: string } | null => {
-            let d: Date | null = null;
-
-            if (val instanceof Date && !isNaN(val.getTime())) {
-              d = val;
-            } else if (typeof val === 'number' && val > 40000 && val < 60000) {
-              // Excel date serial: days since 1899-12-30 (Excel's epoch with 1900 leap-year bug)
-              // Subtract 25569 to get days since Unix epoch (1970-01-01)
-              const ms = Math.round((val - 25569) * 86400 * 1000);
-              const candidate = new Date(ms);
-              if (!isNaN(candidate.getTime())) d = candidate;
-            } else if (typeof val === 'string' && val.trim()) {
-              const candidate = new Date(val.trim());
-              if (!isNaN(candidate.getTime())) d = candidate;
-            }
-
-            if (!d) return null;
-            return {
-              display: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-              iso: d.toISOString().split('T')[0],
-            };
-          };
-
-          const parsed: any[] = [];
-          for (const row of rawRows) {
-            const dateVal = row['Date'] ?? row['date'] ?? row['DATE'] ?? '';
-            const gmvVal  = row['Gross Merchandise Value'] ?? row['GMV'] ?? row['gmv'] ?? 0;
-            const ordVal  = row['# Gross Orders'] ?? row['Gross Orders'] ?? row['Orders'] ?? row['orders'] ?? 0;
-            const itmVal  = row['# Gross Items']  ?? row['Gross Items']  ?? row['Items']  ?? row['items']  ?? 0;
-
-            // Skip blank / Total / NaN / filter rows
-            if (dateVal === '' || dateVal == null) continue;
-            if (typeof dateVal === 'string') {
-              const s = dateVal.trim().toLowerCase();
-              if (!s || s === 'nan' || s.includes('total') || s.includes('filter')) continue;
-            }
-
-            const dateResult = resolveDate(dateVal);
-            if (!dateResult) continue; // skip rows whose date can't be resolved
-
-            const gmv    = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
-            const orders = parseInt(String(ordVal).replace(/,/g, ''), 10) || 0;
-            const items  = parseInt(String(itmVal).replace(/,/g, ''), 10) || 0;
-
-            parsed.push({ date: dateResult.display, _isoDate: dateResult.iso, gmv, orders, items });
-          }
-
-          if (parsed.length === 0) {
-            setUploadStatus('error');
-            setUploadMessage('No valid records found. Expected columns: Date, Gross Merchandise Value, # Gross Orders, # Gross Items');
-            return;
-          }
-
-          await handleBulkImportDailyData(parsed);
-          setUploadStatus('success');
-          setUploadMessage(`Successfully imported ${parsed.length} days from Excel!`);
-        } catch (err: any) {
-          setUploadStatus('error');
-          setUploadMessage(`Excel parsing error: ${err.message || 'Unknown error'}`);
-        }
-      };
-      reader.onerror = () => { setUploadStatus('error'); setUploadMessage('Failed to read the file.'); };
-      reader.readAsBinaryString(file); // readAsBinaryString + type:'binary' is the proven pattern here
-      return;
-    }
-
-    // CSV / JSON / TXT
+    // Use SheetJS for ALL file types (xlsx, xls, csv, tsv, ods, txt).
+    // This correctly handles CSV numbers with thousand-separators like "213,908"
+    // because SheetJS treats them as quoted fields — the naive comma-split breaks them.
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (!text) {
-        setUploadStatus('error');
-        setUploadMessage('The uploaded file is empty.');
-        return;
-      }
-
+    reader.onload = async (ev) => {
       try {
-        let parsedDailyData: any[] = [];
-        const trimmedText = text.trim();
+        const wb = XLSX.read(ev.target?.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rawRows: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-        // Check if JSON format
-        if (trimmedText.startsWith('[') || trimmedText.startsWith('{')) {
-          const parsed = JSON.parse(trimmedText);
-          let rawRows = null;
-          if (Array.isArray(parsed)) {
-            rawRows = parsed;
-          } else if (parsed && typeof parsed === 'object') {
-            if (Array.isArray(parsed.dailyData)) {
-              rawRows = parsed.dailyData;
-            } else if (Array.isArray(parsed.data)) {
-              rawRows = parsed.data;
-            }
+        // Convert any date representation → ISO string YYYY-MM-DD
+        const resolveDate = (val: any): string | null => {
+          let d: Date | null = null;
+          if (val instanceof Date && !isNaN(val.getTime())) {
+            d = val;
+          } else if (typeof val === 'number' && val > 40000 && val < 60000) {
+            // Excel serial: days since 1899-12-30; subtract 25569 to get Unix epoch days
+            const ms = Math.round((val - 25569) * 86400 * 1000);
+            const c = new Date(ms);
+            if (!isNaN(c.getTime())) d = c;
+          } else if (typeof val === 'string' && val.trim()) {
+            const c = new Date(val.trim());
+            if (!isNaN(c.getTime())) d = c;
+          }
+          return d ? d.toISOString().split('T')[0] : null;
+        };
+
+        const parsed: any[] = [];
+        for (const row of rawRows) {
+          const dateVal = row['Date'] ?? row['date'] ?? row['DATE'] ?? '';
+          const gmvVal  = row['Gross Merchandise Value'] ?? row['GMV'] ?? row['gmv'] ?? row['achievedGMV'] ?? 0;
+          const ordVal  = row['# Gross Orders']  ?? row['Gross Orders']  ?? row['Orders']  ?? row['orders']  ?? 0;
+          const itmVal  = row['# Gross Items']   ?? row['Gross Items']   ?? row['Items']   ?? row['items']   ?? 0;
+
+          // Skip blank / Total / NaN / filter rows
+          if (dateVal === '' || dateVal == null) continue;
+          if (typeof dateVal === 'string') {
+            const s = dateVal.trim().toLowerCase();
+            if (!s || s === 'nan' || s.includes('total') || s.includes('filter')) continue;
           }
 
-          if (rawRows && rawRows.length > 0) {
-            parsedDailyData = rawRows.map((item: any) => ({
-              date: String(item.date || item.Date || ''),
-              gmv: Number(item.gmv || item.GMV || item.achievedGMV || item.achievementGMV || 0),
-              orders: Number(item.orders || item.Orders || item.countOfOrders || item.orderCount || 0),
-              items: Number(item.items || item.Items || item.grossItemSold || item.grossItemsSold || item.itemCount || 0)
-            }));
-          } else {
-            throw new Error('No valid array structure found in JSON file.');
-          }
-        } else {
-          // Parse as CSV/TXT (comma, semicolon, or tab-delimited)
-          const lines = trimmedText.split(/\r?\n/);
-          let startIndex = 0;
-          if (lines.length > 0) {
-            const firstLine = lines[0].toLowerCase();
-            // Check if there is a header line
-            if (firstLine.includes('date') || firstLine.includes('gmv') || firstLine.includes('order') || firstLine.includes('item') || firstLine.includes('achieve')) {
-              startIndex = 1;
-            }
-          }
+          const isoDate = resolveDate(dateVal);
+          if (!isoDate) continue;
 
-          for (let i = startIndex; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
+          // Strip commas from numbers (handles "213,908" → 213908)
+          const gmv    = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
+          const orders = parseInt(String(ordVal).replace(/,/g, ''), 10) || 0;
+          const items  = parseInt(String(itmVal).replace(/,/g, ''), 10) || 0;
 
-            const columns = line.split(/[,;\t]/).map(col => col.trim().replace(/^["']|["']$/g, ''));
-            if (columns.length === 0 || !columns[0]) continue;
-
-            const date = columns[0];
-            const gmv = Number(columns[1]) || 0;
-            const orders = Number(columns[2]) || 0;
-            const items = Number(columns[3]) || 0;
-
-            parsedDailyData.push({ date, gmv, orders, items });
-          }
+          parsed.push({ date: isoDate, gmv, orders, items });
         }
 
-        if (parsedDailyData.length === 0) {
+        if (parsed.length === 0) {
           setUploadStatus('error');
-          setUploadMessage('No records could be parsed. Check column formats.');
+          setUploadMessage('No valid records found. Expected columns: Date, Gross Merchandise Value, # Gross Orders, # Gross Items');
           return;
         }
 
-        handleBulkImportDailyData(parsedDailyData);
+        await handleBulkImportDailyData(parsed);
         setUploadStatus('success');
-        setUploadMessage(`Successfully imported ${parsedDailyData.length} days of daily records!`);
+        setUploadMessage(`Successfully imported ${parsed.length} day${parsed.length !== 1 ? 's' : ''}!`);
       } catch (err: any) {
         setUploadStatus('error');
-        setUploadMessage(`Parsing error: ${err.message || 'Check syntax'}`);
+        setUploadMessage(`Parsing error: ${err.message || 'Unknown error'}`);
       }
     };
-
-    reader.onerror = () => {
-      setUploadStatus('error');
-      setUploadMessage('Failed to read the file.');
-    };
-
-    reader.readAsText(file);
+    reader.onerror = () => { setUploadStatus('error'); setUploadMessage('Failed to read the file.'); };
+    reader.readAsBinaryString(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -906,7 +795,7 @@ export function VendorManagement() {
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    accept=".xlsx,.xls,.csv,.json,.txt"
+                    accept=".xlsx,.xls,.csv,.tsv,.ods,.txt"
                     className="hidden"
                   />
                   <div className="p-3 bg-orange-50 rounded-full text-orange-500">
@@ -914,7 +803,7 @@ export function VendorManagement() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-700">Drag & drop your report file here</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, JSON or plain Text (.xlsx, .csv, .json, .txt)</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, TSV or any spreadsheet format (.xlsx, .csv, .tsv, .ods)</p>
                   </div>
                 </div>
 
@@ -965,7 +854,7 @@ export function VendorManagement() {
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-bold">
-                    <th className="p-3 w-48">Date (e.g. 1 Jul)</th>
+                    <th className="p-3 w-48">Date (YYYY-MM-DD)</th>
                     <th className="p-3">Achieved GMV</th>
                     <th className="p-3">Count of Orders</th>
                     <th className="p-3">Gross Items Sold</th>
