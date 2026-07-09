@@ -13,7 +13,6 @@ function cors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-// Parse URL path into parts array, stripping /api/ prefix
 function parsePath(url) {
   const path = (url || '').split('?')[0];
   const stripped = path.replace(/^\/api\/?/, '');
@@ -46,7 +45,6 @@ module.exports = async function handler(req, res) {
   const q = req.query || {};
   const body = req.body || {};
 
-  // ── POST /api/auth/login ──────────────────────────────────────────────────
   if (parts[0] === 'auth' && parts[1] === 'login') {
     const { email, password } = body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -59,7 +57,6 @@ module.exports = async function handler(req, res) {
     return res.json({ id: data.id, name: data.name, email: data.email, role: data.role.toLowerCase(), vendorId: data.id });
   }
 
-  // ── /api/campaigns ────────────────────────────────────────────────────────
   if (parts[0] === 'campaigns' && !parts[1]) {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('campaigns_v2').select('*').order('created_at', { ascending: false });
@@ -79,7 +76,6 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── /api/campaigns/:id ────────────────────────────────────────────────────
   if (parts[0] === 'campaigns' && parts[1] && !parts[2]) {
     const id = parts[1];
     if (req.method === 'GET') {
@@ -105,7 +101,6 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── /api/performance ──────────────────────────────────────────────────────
   if (parts[0] === 'performance' && !parts[1]) {
     if (req.method === 'GET') {
       const { vendor_id } = q;
@@ -140,7 +135,55 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── GET /api/products/:sku ────────────────────────────────────────────────
+  if (parts[0] === 'products' && !parts[1]) {
+    if (req.method === 'GET') {
+      const { vendor_id } = q;
+      let query = supabase.from('products')
+        .select('sku, name, supplier_sku, brand, live_price, best_price, live_stock');
+      if (vendor_id) query = query.eq('vendor_id', vendor_id);
+      query = query.order('sku', { ascending: true });
+      const { data, error } = await query;
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json((data || []).map(p => ({
+        sku:          p.sku,
+        supplier_sku: p.supplier_sku || '',
+        brand:        p.brand || '',
+        model_name:   p.name || '',
+        price_before: parseFloat(p.best_price)  || 0,
+        price_after:  parseFloat(p.live_price)  || 0,
+        live_stock:   parseInt(p.live_stock)    || 0,
+      })));
+    }
+    if (req.method === 'POST') {
+      const { products: items } = body;
+      if (!Array.isArray(items) || items.length === 0)
+        return res.status(400).json({ error: 'products array required' });
+      const records = items.map(r => ({
+        sku:          r.sku,
+        vendor_id:    r.vendor_id,
+        name:         r.model_name || '',
+        supplier_sku: r.supplier_sku || '',
+        brand:        r.brand || '',
+        best_price:   parseFloat(r.price_before) || 0,
+        live_price:   parseFloat(r.price_after)  || 0,
+        live_stock:   parseInt(r.live_stock)     || 0,
+      })).filter(r => r.sku && r.vendor_id);
+      if (records.length === 0)
+        return res.status(400).json({ error: 'No valid product rows (sku + vendor_id required)' });
+      const { error } = await supabase.from('products')
+        .upsert(records, { onConflict: 'sku' });
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json({ success: true, count: records.length });
+    }
+    if (req.method === 'DELETE') {
+      const { vendor_id } = q;
+      if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
+      const { error } = await supabase.from('products').delete().eq('vendor_id', vendor_id);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json({ success: true });
+    }
+  }
+
   if (parts[0] === 'products' && parts[1] && !parts[2]) {
     const sku = decodeURIComponent(parts[1]);
     const { data, error } = await supabase.from('products')
@@ -154,7 +197,6 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // ── PUT /api/submissions/:id/products/:sku/status ─────────────────────────
   if (parts[0] === 'submissions' && parts[1] && parts[2] === 'products' && parts[3] && parts[4] === 'status') {
     const id = parts[1], sku = decodeURIComponent(parts[3]);
     if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
@@ -176,7 +218,6 @@ module.exports = async function handler(req, res) {
     return res.json({ success: true, submission: mapSubmission(data) });
   }
 
-  // ── PUT /api/submissions/:id/status ───────────────────────────────────────
   if (parts[0] === 'submissions' && parts[1] && parts[2] === 'status' && !parts[3]) {
     const id = parts[1];
     if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
@@ -190,7 +231,6 @@ module.exports = async function handler(req, res) {
     return res.json({ success: true, submission: mapSubmission(data) });
   }
 
-  // ── GET/DELETE /api/submissions/:id ───────────────────────────────────────
   if (parts[0] === 'submissions' && parts[1] && !parts[2]) {
     const id = parts[1];
     if (req.method === 'GET') {
@@ -205,7 +245,6 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── /api/submissions ──────────────────────────────────────────────────────
   if (parts[0] === 'submissions' && !parts[1]) {
     if (req.method === 'GET') {
       let query = supabase.from('submissions_v2').select('*').order('submitted_at', { ascending: false });
@@ -240,7 +279,6 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── POST /api/validate-price ──────────────────────────────────────────────
   if (parts[0] === 'validate-price') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
     const { sku, newPrice, newStock, campaignId } = body;
@@ -273,7 +311,6 @@ module.exports = async function handler(req, res) {
     return res.json({ valid: true, discountPercent: finalDiscount.toFixed(2), savings: (product.priceBeforeDiscount - price).toFixed(2), message: 'Valid campaign price. Ready for submission.' });
   }
 
-  // ── /api/vendors ──────────────────────────────────────────────────────────
   if (parts[0] === 'vendors') {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('users')
