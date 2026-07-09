@@ -64,9 +64,18 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
   }, [vendorId]);
 
   if (!vendorData) {
-    return <div className="p-8 text-center text-slate-500">Loading performance data...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[120px]">
+        <style>{`.jumia-loader{--dim:2.2rem;background-color:#f97316;opacity:0.55;width:var(--dim);height:var(--dim);border-radius:50%;display:grid;place-items:center;animation:spin_412 5s infinite;} .jumia-loader svg{transform:translateY(-1px) scale(.65);} @keyframes spin_412{0%{transform:rotate(0) scale(1);}50%{transform:rotate(720deg) scale(1.2);}100%{transform:rotate(0) scale(1);}}`}</style>
+        <div className="jumia-loader">
+          <svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg">
+            <path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/>
+          </svg>
+        </div>
+      </div>
+    );
   }
-  
+
   const targetGMV = vendorData.targetGMV || 0;
   const currentGMV = vendorData.achievementGMV || 0;
   const progress = targetGMV > 0 ? (currentGMV / targetGMV) * 100 : 0;
@@ -103,7 +112,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
               <h3 className="text-3xl font-black text-slate-900">{targetGMV.toLocaleString()} <span className="text-lg text-slate-400">EGP</span></h3>
             </div>
           </div>
-          
+
           <div className="space-y-2 mt-4">
             <div className="flex justify-between items-end">
               <div>
@@ -113,7 +122,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
               <p className="text-xl font-black text-slate-900">{progress.toFixed(1)}%</p>
             </div>
             <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000"
                 style={{ width: `${Math.min(progress, 100)}%` }}
               />
@@ -179,8 +188,8 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
         <div className="h-[350px] w-full">
           {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart 
-              data={chartData} 
+            <AreaChart
+              data={chartData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
               className="cursor-pointer"
               onMouseMove={(state: any) => {
@@ -201,35 +210,35 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: '#64748b' }}
                 dy={10}
               />
-              <YAxis 
+              <YAxis
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: '#64748b' }}
                 tickFormatter={(val) => activeMetric === 'gmv' ? `${(val/1000)}k` : val}
                 dx={-10}
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                 labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}
                 formatter={(value: number) => [
-                  activeMetric === 'gmv' ? `${value.toLocaleString()} EGP` : value.toLocaleString(), 
+                  activeMetric === 'gmv' ? `${value.toLocaleString()} EGP` : value.toLocaleString(),
                   config.name
                 ]}
               />
-              <Area 
-                type="monotone" 
-                dataKey={config.key} 
-                stroke={config.color} 
+              <Area
+                type="monotone"
+                dataKey={config.key}
+                stroke={config.color}
                 strokeWidth={3}
-                fillOpacity={1} 
-                fill="url(#colorMetric)" 
+                fillOpacity={1}
+                fill="url(#colorMetric)"
                 dot={{ r: 4, stroke: config.color, strokeWidth: 2, fill: '#fff' }}
                 activeDot={{ r: 7, stroke: config.color, strokeWidth: 2, fill: '#fff' }}
                 onClick={(data: any) => {
@@ -305,7 +314,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* GMV Breakdown */}
                   <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
                     <div className="p-2.5 bg-orange-500/10 rounded-lg text-orange-600">
                       <TrendingUp className="w-4 h-4" />
@@ -318,7 +326,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                     </div>
                   </div>
 
-                  {/* Orders Breakdown */}
                   <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
                     <div className="p-2.5 bg-blue-500/10 rounded-lg text-blue-600">
                       <ShoppingCart className="w-4 h-4" />
@@ -331,7 +338,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                     </div>
                   </div>
 
-                  {/* Items Breakdown */}
                   <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
                     <div className="p-2.5 bg-purple-500/10 rounded-lg text-purple-600">
                       <Package className="w-4 h-4" />
