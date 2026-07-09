@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, TrendingUp, ShoppingCart, Package, ChevronLeft, Plus, Save, Calendar, Trash2, Mail, Lock, UserPlus, X, Eye, EyeOff, Upload, FileText, Check, AlertCircle, Info } from 'lucide-react';
 import clsx from 'clsx';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, parse, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
+import * as XLSX from 'xlsx';
 
 interface DailyDatePickerProps {
   value: string;
@@ -299,11 +300,32 @@ export function VendorManagement() {
     }
   };
 
-  const handleSubmitInputs = () => {
+  const handleSubmitInputs = async () => {
     setShowSubmitSuccess(true);
-    setTimeout(() => {
-      setShowSubmitSuccess(false);
-    }, 4000);
+    setTimeout(() => setShowSubmitSuccess(false), 4000);
+
+    // Save manually-entered daily data to Supabase
+    const sv = vendors.find((v: any) => v.id === selectedVendorId);
+    if (sv && sv.dailyData?.length > 0) {
+      const toIso = (d: string): string => {
+        try { const p = parse(d, 'd MMM', new Date()); if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
+        try { const p = parseISO(d);                  if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
+        return d;
+      };
+      const apiRows = sv.dailyData.map((r: any) => ({
+        date:         (r as any).isoDate || toIso(r.date),
+        gmv:          r.gmv,
+        gross_orders: r.orders,
+        gross_items:  r.items,
+      }));
+      try {
+        await fetch('/api/performance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendor_id: selectedVendorId, rows: apiRows }),
+        });
+      } catch {}
+    }
   };
 
   const handleOpenEditProfile = (vendor: any) => {
@@ -353,27 +375,97 @@ export function VendorManagement() {
   const [uploadMessage, setUploadMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleBulkImportDailyData = (parsedDailyData: any[]) => {
+  const handleBulkImportDailyData = async (parsedDailyData: any[]) => {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (!selectedVendor || parsedDailyData.length === 0) return;
 
-    const totalGmv = parsedDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
+    const totalGmv    = parsedDailyData.reduce((acc, curr) => acc + Number(curr.gmv    || 0), 0);
     const totalOrders = parsedDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
-    const totalItems = parsedDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
+    const totalItems  = parsedDailyData.reduce((acc, curr) => acc + Number(curr.items  || 0), 0);
 
     handleUpdateVendor({
       ...selectedVendor,
       dailyData: parsedDailyData,
       achievementGMV: totalGmv,
-      countOfOrders: totalOrders,
-      grossItemSold: totalItems
+      countOfOrders:  totalOrders,
+      grossItemSold:  totalItems
     });
+
+    // Persist to Supabase
+    const toIso = (d: string): string => {
+      try { const p = parse(d, 'd MMM', new Date()); if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
+      try { const p = parseISO(d);                  if (!isNaN(p.getTime())) return format(p, 'yyyy-MM-dd'); } catch {}
+      return d;
+    };
+    const apiRows = parsedDailyData.map((r: any) => ({
+      date:         (r as any).isoDate || toIso(r.date),
+      gmv:          r.gmv,
+      gross_orders: r.orders,
+      gross_items:  r.items,
+    }));
+    try {
+      await fetch('/api/performance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendor_id: selectedVendorId, rows: apiRows }),
+      });
+    } catch {}
   };
 
   const handleFileParse = (file: File) => {
     setUploadStatus('idle');
     setUploadMessage('');
 
+    // ── Excel (.xlsx / .xls) ─────────────────────────────────
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    if (isExcel) {
+      const xReader = new FileReader();
+      xReader.onload = async (ev) => {
+        try {
+          const wb = XLSX.read(ev.target?.result, { type: 'binary', cellDates: true });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rawRows: any[] = XLSX.utils.sheet_to_json(ws, { raw: false, defval: '' });
+
+          const parsedDailyData: any[] = [];
+          for (const row of rawRows) {
+            const dateVal   = String(row['Date'] || row['date'] || '').trim();
+            const gmvVal    = row['Gross Merchandise Value'] || row['GMV']          || row['gmv']    || 0;
+            const ordersVal = row['# Gross Orders']          || row['Gross Orders'] || row['orders'] || 0;
+            const itemsVal  = row['# Gross Items']           || row['Gross Items']  || row['items']  || 0;
+
+            if (!dateVal || /^(total|applied|nan)$/i.test(dateVal.split(' ')[0])) continue;
+            const parsedDate = new Date(dateVal);
+            if (isNaN(parsedDate.getTime())) continue;
+
+            const isoDate     = parsedDate.toISOString().split('T')[0];
+            const displayDate = parsedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            const gmv         = parseFloat(String(gmvVal).replace(/,/g, ''))   || 0;
+            const orders      = parseInt(String(ordersVal).replace(/,/g, ''))  || 0;
+            const items       = parseInt(String(itemsVal).replace(/,/g, ''))   || 0;
+
+            parsedDailyData.push({ date: displayDate, isoDate, gmv, orders, items });
+          }
+
+          if (parsedDailyData.length === 0) {
+            setUploadStatus('error');
+            setUploadMessage('No valid rows found. Expected columns: Date, Gross Merchandise Value, # Gross Orders, # Gross Items.');
+            return;
+          }
+
+          await handleBulkImportDailyData(parsedDailyData);
+          setUploadStatus('success');
+          setUploadMessage(`Successfully imported ${parsedDailyData.length} days from Excel and saved to database!`);
+        } catch (err: any) {
+          setUploadStatus('error');
+          setUploadMessage(`Excel error: ${err.message || 'Unknown error'}`);
+        }
+      };
+      xReader.onerror = () => { setUploadStatus('error'); setUploadMessage('Failed to read the Excel file.'); };
+      xReader.readAsBinaryString(file);
+      return;
+    }
+
+    // ── CSV / JSON / TXT ─────────────────────────────────────
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
@@ -490,6 +582,30 @@ export function VendorManagement() {
   useEffect(() => {
     localStorage.setItem('vendorsData', JSON.stringify(vendors));
   }, [vendors]);
+
+  // Load performance data from API when a vendor is selected
+  useEffect(() => {
+    if (!selectedVendorId) return;
+    fetch(`/api/performance?vendor_id=${selectedVendorId}`)
+      .then(r => r.json())
+      .then(rows => {
+        if (!Array.isArray(rows) || rows.length === 0) return;
+        const dailyData = rows.map((r: any) => ({
+          date: (() => { try { return new Date(r.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch { return r.date; } })(),
+          isoDate: r.date,
+          gmv: Number(r.gmv),
+          orders: Number(r.gross_orders),
+          items: Number(r.gross_items),
+        }));
+        const totalGmv    = dailyData.reduce((acc: number, cur: any) => acc + cur.gmv, 0);
+        const totalOrders = dailyData.reduce((acc: number, cur: any) => acc + cur.orders, 0);
+        const totalItems  = dailyData.reduce((acc: number, cur: any) => acc + cur.items, 0);
+        setVendors((prev: any[]) => prev.map(v => v.id === selectedVendorId ? {
+          ...v, dailyData, achievementGMV: totalGmv, countOfOrders: totalOrders, grossItemSold: totalItems,
+        } : v));
+      })
+      .catch(() => {});
+  }, [selectedVendorId]);
 
   const selectedVendor = vendors.find(v => v.id === selectedVendorId);
 
@@ -746,7 +862,7 @@ export function VendorManagement() {
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    accept=".csv,.json,.txt"
+                    accept=".xlsx,.csv,.json,.txt"
                     className="hidden"
                   />
                   <div className="p-3 bg-orange-50 rounded-full text-orange-500">
@@ -754,7 +870,7 @@ export function VendorManagement() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-700">Drag & drop your report file here</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Supports CSV, JSON or plain Text (.csv, .json, .txt)</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, or JSON (.xlsx, .csv, .json)</p>
                   </div>
                 </div>
 
