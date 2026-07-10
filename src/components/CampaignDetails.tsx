@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { isValid, format } from 'date-fns';
 
-/* ── helpers ─────────────────────────────────────────────────── */
+/* ââ helpers âââââââââââââââââââââââââââââââââââââââââââââââââââ */
 const safeFormat = (date: any, formatStr: string) => {
   try {
     const d = new Date(date);
@@ -57,7 +57,7 @@ const getCategoryStyle = (category: string) => {
   return { icon: Package, color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200' };
 };
 
-/* ── Dropdown (same as LiveSkus) ─────────────────────────────── */
+/* ââ Dropdown (same as LiveSkus) âââââââââââââââââââââââââââââââ */
 interface DropdownProps {
   value: string;
   onChange: (val: string) => void;
@@ -102,7 +102,7 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
   );
 }
 
-/* ── Loader (same as LiveSkus) ───────────────────────────────── */
+/* ââ Loader (same as LiveSkus) âââââââââââââââââââââââââââââââââ */
 function Loader() {
   return (
     <>
@@ -116,7 +116,7 @@ function Loader() {
   );
 }
 
-/* ── Types ───────────────────────────────────────────────────── */
+/* ââ Types âââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 interface CampaignDetailsProps {
   campaign: Campaign;
   onBack: () => void;
@@ -135,7 +135,7 @@ interface ProductEntry {
   promoStock: string;    // editable
 }
 
-/* ── Main Component ──────────────────────────────────────────── */
+/* ââ Main Component ââââââââââââââââââââââââââââââââââââââââââââ */
 export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorName }: CampaignDetailsProps) {
   const [entries, setEntries]                 = useState<ProductEntry[]>([]);
   const [loading, setLoading]                 = useState(true);
@@ -191,7 +191,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
   const updateEntry = (sku: string, field: 'promoPrice' | 'promoStock', value: string) =>
     setEntries(prev => prev.map(e => e.sku === sku ? { ...e, [field]: value } : e));
 
-  const fmt = (n: number) => (n > 0 ? `EGP ${n.toLocaleString()}` : '—');
+  const fmt = (n: number) => (n > 0 ? `EGP ${n.toLocaleString()}` : 'â');
 
   const handleSubmit = async () => {
     if (readyEntries.length === 0) return;
@@ -216,7 +216,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     }
   };
 
-  /* ── Success screen ───────────────────────────────────────── */
+  /* ââ Success screen âââââââââââââââââââââââââââââââââââââââââ */
   if (submissionSuccess) {
     return (
       <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-200/60 p-12 text-center max-w-lg mx-auto mt-12 relative overflow-hidden">
@@ -252,9 +252,9 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     );
   }
 
-  /* ── Left panel (campaign info) — unchanged ───────────────── */
+  /* ââ Left panel (campaign info) â unchanged âââââââââââââââââ */
   const LeftPanel = (
-    <div className="w-full lg:w-[340px] flex flex-col gap-4 shrink-0 lg:h-full lg:overflow-y-auto lg:pr-1 pb-4">
+    <div className="w-full lg:w-[240px] flex flex-col gap-4 shrink-0 lg:h-full lg:overflow-y-auto lg:pr-1 pb-4">
       <button
         onClick={onBack}
         className="group flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors font-medium text-sm w-fit mb-2"
@@ -343,7 +343,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     </div>
   );
 
-  /* ── Admin view ───────────────────────────────────────────── */
+  /* ââ Admin view âââââââââââââââââââââââââââââââââââââââââââââ */
   if (userRole === 'admin') {
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -363,7 +363,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     );
   }
 
-  /* ── Review state ─────────────────────────────────────────── */
+  /* ââ Review state âââââââââââââââââââââââââââââââââââââââââââ */
   if (isReviewing) {
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -388,7 +388,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                 <div key={p.sku} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex-1 min-w-0 text-center sm:text-left">
                     <h4 className="text-sm font-black text-slate-800 truncate">{p.model_name || p.sku}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.sku} · {p.brand}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.sku} Â· {p.brand}</p>
                     {p.supplier_sku && (
                       <p className="text-[10px] text-slate-300 font-mono mt-0.5">{p.supplier_sku}</p>
                     )}
@@ -441,7 +441,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     );
   }
 
-  /* ── Main promotional-prices table ───────────────────────── */
+  /* ââ Main promotional-prices table âââââââââââââââââââââââââ */
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
       className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-140px)] min-h-[500px]">
@@ -516,15 +516,15 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
               <p className="text-xs font-semibold text-slate-500">No products match your filters.</p>
             </div>
           ) : (
-            <table className="w-full text-xs whitespace-nowrap min-w-[900px]">
+            <table className="w-full text-xs whitespace-nowrap">
               <colgroup>
-                <col style={{ width: '150px' }} />   {/* SKU */}
-                <col style={{ width: '170px' }} />   {/* Supplier SKU */}
-                <col style={{ width: '130px' }} />   {/* Brand */}
-                <col />                               {/* Model Name — auto */}
-                <col style={{ width: '150px' }} />   {/* Current Price */}
-                <col style={{ width: '175px' }} />   {/* Promo Price */}
-                <col style={{ width: '135px' }} />   {/* Promo Stock */}
+                <col style={{ width: '115px' }} />   {/* SKU */}
+                <col style={{ width: '140px' }} />   {/* Supplier SKU */}
+                <col style={{ width: '105px' }} />   {/* Brand */}
+                <col />                               {/* Model Name â auto */}
+                <col style={{ width: '120px' }} />   {/* Current Price */}
+                <col style={{ width: '155px' }} />   {/* Promo Price */}
+                <col style={{ width: '115px' }} />   {/* Promo Stock */}
               </colgroup>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-orange-50 border-b border-orange-200 text-orange-600">
@@ -556,19 +556,19 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
 
                       {/* Supplier SKU */}
                       <td className="px-4 py-3 text-center font-mono text-slate-500 truncate max-w-[170px]" title={p.supplier_sku}>
-                        {p.supplier_sku || '—'}
+                        {p.supplier_sku || 'â'}
                       </td>
 
                       {/* Brand */}
                       <td className="px-4 py-3 text-center">
                         <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">
-                          {p.brand || '—'}
+                          {p.brand || 'â'}
                         </span>
                       </td>
 
                       {/* Model Name */}
                       <td className="px-4 py-3 text-left text-slate-700">
-                        <span className="block truncate" title={p.model_name}>{p.model_name || '—'}</span>
+                        <span className="block truncate" title={p.model_name}>{p.model_name || 'â'}</span>
                       </td>
 
                       {/* Current Price */}
@@ -617,7 +617,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
           )}
         </div>
 
-        {/* Footer — submit */}
+        {/* Footer â submit */}
         {!loading && entries.length > 0 && (
           <div className="px-5 py-4 bg-white/90 backdrop-blur border-t border-slate-200 flex items-center justify-between shadow-[0_-4px_12px_rgb(0,0,0,0.02)]">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
