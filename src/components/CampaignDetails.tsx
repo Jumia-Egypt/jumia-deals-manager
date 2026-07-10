@@ -5,20 +5,16 @@ import {
   Sun, Wallet, Sparkles, Cake, Shirt, Smartphone, Tablet, Laptop,
   Gamepad2, Tv, Microwave, WashingMachine, Refrigerator, Headphones,
   Monitor, Speaker, Bike, Scissors, Backpack, MoonStar, Users, Beef,
-  Eye, ChevronDown, Check, Info,
+  Eye, ChevronDown, Check, Info, XCircle, AlertCircle,
 } from 'lucide-react';
 import type { Campaign } from '../types';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { isValid, format } from 'date-fns';
 
-/* Ã¢ÂÂÃ¢ÂÂ helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 const safeFormat = (date: any, formatStr: string) => {
-  try {
-    const d = new Date(date);
-    if (isValid(d)) return format(d, formatStr);
-    return 'Invalid Date';
-  } catch { return 'Invalid Date'; }
+  try { const d = new Date(date); if (isValid(d)) return format(d, formatStr); return 'Invalid Date'; }
+  catch { return 'Invalid Date'; }
 };
 
 const getCampaignStyle = (name: string) => {
@@ -50,28 +46,20 @@ const getCategoryStyle = (category: string) => {
   if (cat.includes('tvs accessories'))       return { icon: Speaker,      color: 'text-slate-500',  bg: 'bg-slate-50',  border: 'border-slate-200' };
   if (cat.includes('tvs'))                   return { icon: Tv,           color: 'text-slate-600',  bg: 'bg-slate-50',  border: 'border-slate-200' };
   if (cat.includes('small home appliance'))  return { icon: Microwave,    color: 'text-amber-500',  bg: 'bg-amber-50',  border: 'border-amber-200' };
-  if (cat.includes('medium home appliance')) return { icon: WashingMachine,color:'text-teal-500',  bg: 'bg-teal-50',   border: 'border-teal-200' };
+  if (cat.includes('medium home appliance')) return { icon: WashingMachine,color:'text-teal-500',   bg: 'bg-teal-50',   border: 'border-teal-200' };
   if (cat.includes('large home appliance'))  return { icon: Refrigerator, color: 'text-slate-600',  bg: 'bg-slate-100', border: 'border-slate-300' };
   if (cat.includes('electric scooters'))     return { icon: Bike,         color: 'text-green-500',  bg: 'bg-green-50',  border: 'border-green-200' };
   if (cat.includes('health and beauty'))     return { icon: Scissors,     color: 'text-rose-500',   bg: 'bg-rose-50',   border: 'border-rose-200' };
   return { icon: Package, color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200' };
 };
 
-/* Ã¢ÂÂÃ¢ÂÂ Dropdown (same as LiveSkus) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
-interface DropdownProps {
-  value: string;
-  onChange: (val: string) => void;
-  options: { label: string; value: string }[];
-  placeholder: string;
-  className?: string;
-}
+interface DropdownProps { value: string; onChange: (val: string) => void; options: { label: string; value: string }[]; placeholder: string; className?: string; }
 function Dropdown({ value, onChange, options, placeholder, className = '' }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
   }, []);
   const sel = options.find(o => o.value === value);
   return (
@@ -102,7 +90,6 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
   );
 }
 
-/* Ã¢ÂÂÃ¢ÂÂ Loader (same as LiveSkus) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 function Loader() {
   return (
     <>
@@ -116,37 +103,55 @@ function Loader() {
   );
 }
 
-/* Ã¢ÂÂÃ¢ÂÂ Types Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
-interface CampaignDetailsProps {
-  campaign: Campaign;
-  onBack: () => void;
-  userRole?: 'admin' | 'vendor' | null;
-  vendorId?: string | null;
-  vendorName?: string | null;
+interface CampaignDetailsProps { campaign: Campaign; onBack: () => void; userRole?: 'admin' | 'vendor' | null; vendorId?: string | null; vendorName?: string | null; }
+interface ProductEntry { sku: string; supplier_sku: string; brand: string; model_name: string; price_after: number; promoPrice: string; promoStock: string; }
+
+interface ValidationPopupProps { sku: string; modelName: string; reason: string; onClose: () => void; }
+function ValidationPopup({ sku, modelName, reason, onClose }: ValidationPopupProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" />
+      <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }} transition={{ duration: 0.15 }}
+        className="relative bg-white rounded-2xl shadow-2xl shadow-slate-900/20 border border-slate-200/60 w-full max-w-sm overflow-hidden"
+        onClick={e => e.stopPropagation()}>
+        <div className="h-1.5 w-full bg-gradient-to-r from-red-500 to-rose-500" />
+        <div className="p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="bg-red-100 p-2.5 rounded-xl flex-shrink-0">
+              <XCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Validation Failed</h3>
+              <p className="text-[11px] text-slate-500 font-mono mt-0.5">{sku}</p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-600 font-medium mb-4 truncate">{modelName || sku}</p>
+          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-5">
+            <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> Rejection Reason
+            </p>
+            <p className="text-xs text-red-800 leading-relaxed">{reason}</p>
+          </div>
+          <button onClick={onClose} className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all">
+            Got it
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
-interface ProductEntry {
-  sku: string;
-  supplier_sku: string;
-  brand: string;
-  model_name: string;
-  price_after: number;   // current live price
-  promoPrice: string;    // editable
-  promoStock: string;    // editable
-}
-
-/* Ã¢ÂÂÃ¢ÂÂ Main Component Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorName }: CampaignDetailsProps) {
-  const [entries, setEntries]                 = useState<ProductEntry[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [loadError, setLoadError]             = useState('');
-  const [submitting, setSubmitting]           = useState(false);
+  const [entries, setEntries]               = useState<ProductEntry[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [loadError, setLoadError]           = useState('');
+  const [submitting, setSubmitting]         = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState<{ id: string; time: string } | null>(null);
-  const [isReviewing, setIsReviewing]         = useState(false);
-  const [brandFilter, setBrandFilter]         = useState('');
-  const [search, setSearch]                   = useState('');
+  const [isReviewing, setIsReviewing]       = useState(false);
+  const [brandFilter, setBrandFilter]       = useState('');
+  const [search, setSearch]                 = useState('');
+  const [validationPopup, setValidationPopup] = useState<{ sku: string; modelName: string; reason: string } | null>(null);
 
-  /* Load vendor's products from Supabase */
   useEffect(() => {
     if (!vendorId) { setLoading(false); return; }
     const load = async () => {
@@ -155,77 +160,58 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
         const r = await fetch(`/api/products?vendor_id=${vendorId}`);
         if (!r.ok) throw new Error('Failed to load products');
         const prods = (await r.json()) || [];
-        setEntries(
-          prods.map((p: any) => ({
-            sku:          p.sku,
-            supplier_sku: p.supplier_sku || '',
-            brand:        p.brand || '',
-            model_name:   p.model_name || '',
-            price_after:  parseFloat(p.price_after) || 0,
-            promoPrice:   '',
-            promoStock:   '',
-          }))
-        );
-      } catch (e: any) {
-        setLoadError(e.message);
-      } finally {
-        setLoading(false);
-      }
+        setEntries(prods.map((p: any) => ({
+          sku: p.sku, supplier_sku: p.supplier_sku || '', brand: p.brand || '',
+          model_name: p.model_name || '', price_after: parseFloat(p.price_after) || 0,
+          promoPrice: '', promoStock: '',
+        })));
+      } catch (e: any) { setLoadError(e.message); }
+      finally { setLoading(false); }
     };
     load();
   }, [vendorId]);
 
-  /* Derived */
   const brands   = Array.from(new Set(entries.map(p => p.brand).filter(Boolean))).sort();
   const filtered = entries.filter(p => {
     const mb = !brandFilter || p.brand === brandFilter;
-    const ms = !search
-      || p.sku?.toLowerCase().includes(search.toLowerCase())
-      || p.model_name?.toLowerCase().includes(search.toLowerCase());
+    const ms = !search || p.sku?.toLowerCase().includes(search.toLowerCase()) || p.model_name?.toLowerCase().includes(search.toLowerCase());
     return mb && ms;
   });
-  const readyEntries = entries.filter(
-    e => e.promoPrice && parseFloat(e.promoPrice) > 0 && e.promoStock && parseInt(e.promoStock) > 0
-  );
+  const readyEntries = entries.filter(e => e.promoPrice && parseFloat(e.promoPrice) > 0 && e.promoStock && parseInt(e.promoStock) > 0);
 
   const updateEntry = (sku: string, field: 'promoPrice' | 'promoStock', value: string) =>
     setEntries(prev => prev.map(e => e.sku === sku ? { ...e, [field]: value } : e));
 
-  const fmt = (n: number) => (n > 0 ? `EGP ${n.toLocaleString()}` : 'Ã¢ÂÂ');
+  const fmt = (n: number) => (n > 0 ? `EGP ${n.toLocaleString()}` : '—');
+
+  const getValidation = (p: ProductEntry): { valid: boolean; reason: string } => {
+    const hasPrice = p.promoPrice && parseFloat(p.promoPrice) > 0;
+    const hasStock = p.promoStock && parseInt(p.promoStock) > 0;
+    if (!hasPrice && !hasStock) return { valid: false, reason: 'Promo price and promo stock are both missing. Please fill in both fields before submitting.' };
+    if (!hasPrice) return { valid: false, reason: 'Promo price is missing or invalid. Please enter a valid promotional price greater than 0.' };
+    if (!hasStock) return { valid: false, reason: 'Promo stock is missing or invalid. Please enter the number of units available for this promotion.' };
+    return { valid: true, reason: '' };
+  };
 
   const handleSubmit = async () => {
     if (readyEntries.length === 0) return;
     setSubmitting(true);
     try {
       const res = await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campaignId:  campaign.id,
-          vendorId:    vendorId   || null,
-          vendorName:  vendorName || null,
-          products:    readyEntries.map(p => ({ sku: p.sku, price: p.promoPrice, stock: p.promoStock })),
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: campaign.id, vendorId: vendorId || null, vendorName: vendorName || null, products: readyEntries.map(p => ({ sku: p.sku, price: p.promoPrice, stock: p.promoStock })) }),
       });
       const data = await res.json();
       if (data.success) setSubmissionSuccess({ id: data.submissionId, time: data.timestamp });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setSubmitting(false); }
   };
 
-  /* Ã¢ÂÂÃ¢ÂÂ Success screen Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
   if (submissionSuccess) {
     return (
       <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-200/60 p-12 text-center max-w-lg mx-auto mt-12 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-emerald-500" />
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-green-50/50"
-        >
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-green-50/50">
           <CheckCircle2 className="w-12 h-12 text-green-500" />
         </motion.div>
         <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">Prices Submitted</h2>
@@ -242,58 +228,51 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             <span className="font-bold text-slate-900">{safeFormat(submissionSuccess.time, 'PPp')}</span>
           </div>
         </div>
-        <button
-          onClick={onBack}
-          className="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all hover:-translate-y-0.5"
-        >
+        <button onClick={onBack} className="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all hover:-translate-y-0.5">
           Return to Dashboard
         </button>
       </div>
     );
   }
 
-  /* Ã¢ÂÂÃ¢ÂÂ Left panel (campaign info) Ã¢ÂÂ unchanged Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
   const LeftPanel = (
     <div className="w-full lg:w-[240px] flex flex-col gap-4 shrink-0 lg:h-full lg:overflow-y-auto lg:pr-1 pb-4">
-      <button
-        onClick={onBack}
-        className="group flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors font-medium text-sm w-fit mb-2"
-      >
+      <button onClick={onBack} className="group flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors font-medium text-sm w-fit mb-2">
         <div className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm group-hover:border-slate-300 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </div>
         <span>Back to Calendar</span>
       </button>
 
-      <div className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-[0_1px_3px_rgb(0,0,0,0.02)] flex-1 relative overflow-hidden">
+      <div className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-[0_1px_3px_rgb(0,0,0,0.02)] flex-1 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          <Tag className="w-32 h-32" />
+          <Tag className="w-24 h-24" />
         </div>
-        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <span className="w-1.5 h-6 bg-orange-500 rounded-full inline-block" />
+        <h3 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+          <span className="w-1.5 h-5 bg-orange-500 rounded-full inline-block" />
           Campaign Details
         </h3>
-        <div className="space-y-6 relative z-10">
+        <div className="space-y-5 relative z-10">
           <div>
             <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-2">Active Campaign</p>
             {(() => {
               const style = getCampaignStyle(campaign.name);
               const Icon = style.icon;
               return (
-                <div className={clsx('inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ring-1 shadow-sm', style.bg, style.ring, style.text)}>
-                  <Icon className={clsx('w-4 h-4', style.iconColor)} />
-                  <p className="text-sm font-bold leading-none">{campaign.name}</p>
+                <div className={clsx('inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg ring-1 shadow-sm', style.bg, style.ring, style.text)}>
+                  <Icon className={clsx('w-3.5 h-3.5', style.iconColor)} />
+                  <p className="text-xs font-bold leading-none">{campaign.name}</p>
                 </div>
               );
             })()}
           </div>
 
-          <div className="flex flex-col gap-3 p-4 bg-slate-50/80 rounded-xl border border-slate-100">
+          <div className="flex flex-col gap-3 p-3 bg-slate-50/80 rounded-xl border border-slate-100">
             <div>
               <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-1">
                 <CalendarIcon className="w-3 h-3 text-red-500" /> Deadline
               </p>
-              <p className="text-sm font-bold text-red-600 bg-red-50 inline-block px-2 py-0.5 rounded border border-red-100">
+              <p className="text-xs font-bold text-red-600 bg-red-50 inline-block px-2 py-0.5 rounded border border-red-100">
                 {safeFormat(campaign.rules?.submissionDeadline, 'MMM d, yyyy')}
               </p>
             </div>
@@ -314,11 +293,11 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
               </p>
             </div>
             {campaign.rules?.notes && (
-              <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-xs font-bold text-yellow-800 mb-1 flex items-center gap-1">
+              <div className="mt-1 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-[10px] font-bold text-yellow-800 mb-1 flex items-center gap-1">
                   <Info className="w-3 h-3" /> Admin Notes
                 </p>
-                <p className="text-sm text-yellow-900 leading-relaxed whitespace-pre-wrap">{campaign.rules.notes}</p>
+                <p className="text-xs text-yellow-900 leading-relaxed whitespace-pre-wrap">{campaign.rules.notes}</p>
               </div>
             )}
           </div>
@@ -330,8 +309,8 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                 const style = getCategoryStyle(cat);
                 const Icon = style.icon;
                 return (
-                  <span key={cat} className={clsx('px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm flex items-center gap-1.5', style.bg, style.color, style.border)}>
-                    <Icon className={clsx('w-3 h-3', style.color)} />
+                  <span key={cat} className={clsx('px-2 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1', style.bg, style.color, style.border)}>
+                    <Icon className={clsx('w-2.5 h-2.5', style.color)} />
                     {cat}
                   </span>
                 );
@@ -343,7 +322,6 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     </div>
   );
 
-  /* Ã¢ÂÂÃ¢ÂÂ Admin view Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
   if (userRole === 'admin') {
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -354,16 +332,12 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
             <Info className="w-8 h-8 text-slate-400" />
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-2">Admin View</h3>
-          <p className="text-slate-500 max-w-sm">
-            Vendors will use this section to submit promotional prices.
-            As an administrator, you can review their submissions in the "Vendors' Submissions" tab.
-          </p>
+          <p className="text-slate-500 max-w-sm">Vendors will use this section to submit promotional prices. As an administrator, you can review their submissions in the "Vendors' Submissions" tab.</p>
         </div>
       </motion.div>
     );
   }
 
-  /* Ã¢ÂÂÃ¢ÂÂ Review state Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
   if (isReviewing) {
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -375,11 +349,8 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
               <h3 className="text-lg font-black text-slate-900">Review &amp; Confirm Prices</h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">Please review your final promotional offers before submitting to Jumia Admin.</p>
             </div>
-            <div className="px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-100 rounded-xl text-xs font-black">
-              {readyEntries.length} Items Ready
-            </div>
+            <div className="px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-100 rounded-xl text-xs font-black">{readyEntries.length} Items Ready</div>
           </div>
-
           <div className="flex-1 overflow-y-auto p-6 space-y-3 pb-24 bg-slate-50/30">
             {readyEntries.map(p => {
               const promo = parseFloat(p.promoPrice) || 0;
@@ -388,10 +359,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                 <div key={p.sku} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex-1 min-w-0 text-center sm:text-left">
                     <h4 className="text-sm font-black text-slate-800 truncate">{p.model_name || p.sku}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.sku} ÃÂ· {p.brand}</p>
-                    {p.supplier_sku && (
-                      <p className="text-[10px] text-slate-300 font-mono mt-0.5">{p.supplier_sku}</p>
-                    )}
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.sku} · {p.brand}</p>
                   </div>
                   <div className="grid grid-cols-3 gap-x-6 gap-y-1 text-center sm:text-right shrink-0">
                     <div>
@@ -408,31 +376,19 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                     </div>
                   </div>
                   {discount > 0 && (
-                    <span className="px-2.5 py-1 bg-green-50 text-green-700 border border-green-100 rounded-lg text-xs font-black shrink-0">
-                      {discount.toFixed(1)}% Off
-                    </span>
+                    <span className="px-2.5 py-1 bg-green-50 text-green-700 border border-green-100 rounded-lg text-xs font-black shrink-0">{discount.toFixed(1)}% Off</span>
                   )}
                 </div>
               );
             })}
           </div>
-
           <div className="absolute bottom-0 left-0 w-full p-4 bg-white/90 backdrop-blur border-t border-slate-200 flex justify-between items-center shadow-[0_-4px_12px_rgb(0,0,0,0.02)]">
-            <button
-              onClick={() => setIsReviewing(false)}
-              className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold transition-all text-xs flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back &amp; Edit
+            <button onClick={() => setIsReviewing(false)} className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold transition-all text-xs flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4" /> Back &amp; Edit
             </button>
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 flex items-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 text-xs disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitting
-                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <UploadCloud className="w-4 h-4" />}
+            <button onClick={handleSubmit} disabled={submitting}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 flex items-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 text-xs disabled:opacity-60 disabled:cursor-not-allowed">
+              {submitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <UploadCloud className="w-4 h-4" />}
               Confirm &amp; Final Submit
             </button>
           </div>
@@ -441,199 +397,177 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
     );
   }
 
-  /* Ã¢ÂÂÃ¢ÂÂ Main promotional-prices table Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-140px)] min-h-[500px]">
-      {LeftPanel}
+    <>
+      <AnimatePresence>
+        {validationPopup && (
+          <ValidationPopup sku={validationPopup.sku} modelName={validationPopup.modelName} reason={validationPopup.reason} onClose={() => setValidationPopup(null)} />
+        )}
+      </AnimatePresence>
 
-      <div className="flex-1 bg-white border border-slate-200/60 rounded-2xl shadow-[0_4px_12px_rgb(0,0,0,0.03)] flex flex-col overflow-hidden relative h-[500px] lg:h-full">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-140px)] min-h-[500px]">
+        {LeftPanel}
 
-        {/* Header */}
-        <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3 flex-nowrap">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">Promotional Prices</h3>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Enter promotional prices and stock for your products.</p>
+        <div className="flex-1 bg-white border border-slate-200/60 rounded-2xl shadow-[0_4px_12px_rgb(0,0,0,0.03)] flex flex-col overflow-hidden relative h-[500px] lg:h-full">
+
+          {/* Header */}
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3 flex-nowrap">
+            <div className="shrink-0">
+              <h3 className="text-base font-bold text-slate-900">Promotional Prices</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Enter promotional prices and stock for your products.</p>
+            </div>
+            <div className="ml-auto flex items-center gap-3 flex-nowrap">
+              <div className="relative group shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-orange-500 transition-colors pointer-events-none" />
+                <input type="text" placeholder="Search SKU or model..." value={search} onChange={e => setSearch(e.target.value)}
+                  className="pl-8 pr-4 py-2 border border-slate-200 rounded-xl text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50 hover:bg-white w-44" />
+              </div>
+              <div className="w-36 z-20 shrink-0">
+                <Dropdown value={brandFilter} onChange={setBrandFilter} options={brands.map(b => ({ label: b, value: b }))} placeholder="All Brands" className="rounded-xl py-2 px-3" />
+              </div>
+              {!loading && (
+                <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+                  {readyEntries.length > 0 ? <><span className="font-bold text-orange-500">{readyEntries.length}</span> / {entries.length} ready</> : `${filtered.length} / ${entries.length}`}
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Filters */}
-          <div className="ml-auto flex items-center gap-3 flex-nowrap">
-            {/* Search */}
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-orange-500 transition-colors pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search SKU or model..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-8 pr-4 py-2 border border-slate-200 rounded-xl text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50 hover:bg-white w-44"
-              />
-            </div>
+          {/* Table */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center h-full min-h-[120px]"><Loader /></div>
+            ) : loadError ? (
+              <div className="flex items-center justify-center h-full p-6">
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-5 py-4 rounded-xl text-xs max-w-md text-center">
+                  <p className="font-bold mb-1">Failed to load products</p><p>{loadError}</p>
+                </div>
+              </div>
+            ) : entries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
+                <Package className="w-10 h-10 text-slate-200" />
+                <p className="text-xs font-semibold text-slate-500">No products in your catalog yet. Ask your admin to upload your SKUs first.</p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center h-full gap-3 p-6">
+                <Package className="w-10 h-10 text-slate-200" />
+                <p className="text-xs font-semibold text-slate-500">No products match your filters.</p>
+              </div>
+            ) : (
+              <table className="w-full text-xs table-fixed">
+                <colgroup>
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '8%' }} />
+                </colgroup>
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-orange-50 border-b border-orange-200 text-orange-600">
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Brand</th>
+                    <th className="px-3 py-3 text-left font-semibold tracking-wide">Model Name</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Current Price</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Best Price</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide text-orange-700 bg-orange-100/60">Promo Price</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide text-orange-700 bg-orange-100/60">Promo Stock</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map(p => {
+                    const hasPromo = p.promoPrice && parseFloat(p.promoPrice) > 0;
+                    const hasStock = p.promoStock && parseInt(p.promoStock) > 0;
+                    const showStatus = !!(hasPromo || hasStock);
+                    const v = getValidation(p);
+                    return (
+                      <tr key={p.sku} className={clsx('transition-colors duration-100', hasPromo && hasStock ? 'bg-orange-50/30 hover:bg-orange-50/60' : 'bg-white hover:bg-slate-50/70')}>
 
-            {/* Brand filter */}
-            <div className="w40 z-20">
-              <Dropdown
-                value={brandFilter}
-                onChange={setBrandFilter}
-                options={brands.map(b => ({ label: b, value: b }))}
-                placeholder="All Brands"
-                className="rounded-xl py-2 px-3"
-              />
-            </div>
+                        {/* Brand */}
+                        <td className="px-3 py-3 text-center">
+                          <span className="inline-block bg-white border border-slate-200 text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-sm max-w-full truncate">
+                            {p.brand || '—'}
+                          </span>
+                        </td>
 
-            {/* Count */}
-            {!loading && (
-              <span className="text-xs text-slate-400 whitespace-nowrap">
-                {readyEntries.length > 0
-                  ? <><span className="font-bold text-orange-500">{readyEntries.length}</span> / {entries.length} ready</>
-                  : `${filtered.length} / ${entries.length} products`}
-              </span>
+                        {/* Model Name + SKU */}
+                        <td className="px-3 py-3 text-left">
+                          <span className="block font-semibold text-slate-800 truncate leading-tight text-[11px]" title={p.model_name}>
+                            {p.model_name || '—'}
+                          </span>
+                          <span className="block text-[10px] text-slate-400 font-mono mt-0.5">
+                            SKU: {p.sku}
+                          </span>
+                        </td>
+
+                        {/* Current Price */}
+                        <td className="px-3 py-3 text-center font-mono text-slate-500 text-[11px]">
+                          {fmt(p.price_after)}
+                        </td>
+
+                        {/* Best Price — placeholder */}
+                        <td className="px-3 py-3 text-center font-mono text-slate-400 text-[11px]">
+                          EGP 0
+                        </td>
+
+                        {/* Promo Price */}
+                        <td className="px-3 py-2.5 text-center bg-orange-50/20">
+                          <input type="number" min={0} value={p.promoPrice} onChange={e => updateEntry(p.sku, 'promoPrice', e.target.value)} placeholder="Enter price"
+                            className={clsx('w-full text-center focus:outline-none font-bold text-[11px] px-2 py-1.5 rounded-lg transition-colors border',
+                              hasPromo ? 'text-orange-700 bg-white border-orange-200 ring-1 ring-orange-200 shadow-sm' : 'text-slate-600 bg-white border-slate-200 focus:border-orange-400 focus:ring-1 focus:ring-orange-300 shadow-sm')} />
+                        </td>
+
+                        {/* Promo Stock */}
+                        <td className="px-3 py-2.5 text-center bg-orange-50/20">
+                          <input type="number" min={0} value={p.promoStock} onChange={e => updateEntry(p.sku, 'promoStock', e.target.value)} placeholder="Units"
+                            className={clsx('w-full text-center focus:outline-none font-bold text-[11px] px-2 py-1.5 rounded-lg transition-colors border',
+                              hasStock ? 'text-orange-700 bg-white border-orange-200 ring-1 ring-orange-200 shadow-sm' : 'text-slate-600 bg-white border-slate-200 focus:border-orange-400 focus:ring-1 focus:ring-orange-300 shadow-sm')} />
+                        </td>
+
+                        {/* Validation / Status */}
+                        <td className="px-3 py-3 text-center">
+                          {!showStatus ? (
+                            <span className="text-slate-300 text-[10px]">—</span>
+                          ) : v.valid ? (
+                            <div className="flex items-center justify-center">
+                              <div className="w-7 h-7 rounded-full bg-green-50 border border-green-200 flex items-center justify-center shadow-sm">
+                                <Check className="w-3.5 h-3.5 text-green-600" />
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setValidationPopup({ sku: p.sku, modelName: p.model_name, reason: v.reason })}
+                              className="flex items-center justify-center mx-auto w-7 h-7 rounded-full bg-red-50 border border-red-200 hover:bg-red-100 transition-colors shadow-sm group"
+                              title="Click to see rejection reason">
+                              <XCircle className="w-3.5 h-3.5 text-red-500 group-hover:text-red-700 transition-colors" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
-        </div>
 
-        {/* Table area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center h-full min-h-[120px]">
-              <Loader />
+          {/* Footer */}
+          {!loading && entries.length > 0 && (
+            <div className="px-5 py-4 bg-white/90 backdrop-blur border-t border-slate-200 flex items-center justify-between shadow-[0_-4px_12px_rgb(0,0,0,0.02)]">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
+                Fill Promo Price &amp; Stock to mark a product ready
+              </p>
+              <button onClick={() => setIsReviewing(true)} disabled={readyEntries.length === 0 || submitting}
+                className="ml-auto bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                <Eye className="w-4 h-4" />
+                Review Promotional Prices
+              </button>
             </div>
-          ) : loadError ? (
-            <div className="flex items-center justify-center h-full p-6">
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-5 py-4 rounded-xl text-xs max-w-md text-center">
-                <p className="font-bold mb-1">Failed to load products</p>
-                <p>{loadError}</p>
-              </div>
-            </div>
-          ) : entries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
-              <Package className="w-10 h-10 text-slate-200" />
-              <p className="text-xs font-semibold text-slate-500">No products in your catalog yet. Ask your admin to upload your SKUs first.</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
-              <Package className="w-10 h-10 text-slate-200" />
-              <p className="text-xs font-semibold text-slate-500">No products match your filters.</p>
-            </div>
-          ) : (
-            <table className="w-full text-xs">
-              <colgroup>
-                <col style={{ width: '115px' }} />   {/* SKU */}
-                <col style={{ width: '140px' }} />   {/* Supplier SKU */}
-                <col style={{ width: '105px' }} />   {/* Brand */}
-                <col />                               {/* Model Name Ã¢ÂÂ auto */}
-                <col style={{ width: '120px' }} />   {/* Current Price */}
-                <col style={{ width: '155px' }} />   {/* Promo Price */}
-                <col style={{ width: '115px' }} />   {/* Promo Stock */}
-              </colgroup>
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-orange-50 border-b border-orange-200 text-orange-600">
-                  <th className="px-4 py-3 text-center font-semibold tracking-wide">SKU</th>
-                  <th className="px-4 py-3 text-center font-semibold tracking-wide">Supplier SKU</th>
-                  <th className="px-4 py-3 text-center font-semibold tracking-wide">Brand</th>
-                  <th className="px-4 py-3 text-center font-semibold tracking-wide">Model Name</th>
-                  <th className="px-4 py-3 text-center font-semibold tracking-wide">Current Price</th>
-                  <th className="px-4 py-3 text-center font-semibold tracking-wide text-orange-700 bg-orange-100/60">Promo Price</th>
-                  <th className="px-4 py-3 text-center font-semibold tracking-wide text-orange-700 bg-orange-100/60">Promo Stock</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map(p => {
-                  const hasPromo = p.promoPrice && parseFloat(p.promoPrice) > 0;
-                  const hasStock = p.promoStock && parseInt(p.promoStock) > 0;
-                  return (
-                    <tr
-                      key={p.sku}
-                      className={clsx(
-                        'transition-colors duration-100',
-                        hasPromo && hasStock
-                          ? 'bg-orange-50/40 hover:bg-orange-50'
-                          : 'bg-white hover:bg-slate-50'
-                      )}
-                    >
-                      {/* SKU */}
-                      <td className="px-4 py-3 text-center font-mono text-slate-700">{p.sku}</td>
-
-                      {/* Supplier SKU */}
-                      <td className="px-4 py-3 text-center font-mono text-slate-500 truncate max-w-[170px]" title={p.supplier_sku}>
-                        {p.supplier_sku || 'Ã¢ÂÂ'}
-                      </td>
-
-                      {/* Brand */}
-                      <td className="px-4 py-3 text-center">
-                        <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">
-                          {p.brand || 'Ã¢ÂÂ'}
-                        </span>
-                      </td>
-
-                      {/* Model Name */}
-                      <td className="px-4 py-3 text-left text-slate-700">
-                        <span className="block truncate" title={p.model_name}>{p.model_name || 'Ã¢ÂÂ'}</span>
-                      </td>
-
-                      {/* Current Price */}
-                      <td className="px-4 py-3 text-center font-mono text-slate-500">
-                        {fmt(p.price_after)}
-                      </td>
-
-                      {/* Promo Price */}
-                      <td className="px-4 py-3 text-center bg-orange-50/20">
-                        <input
-                          type="number"
-                          min={0}
-                          value={p.promoPrice}
-                          onChange={e => updateEntry(p.sku, 'promoPrice', e.target.value)}
-                          placeholder="Enter price"
-                          className={clsx(
-                            'w-full text-center focus:outline-none font-bold text-[11px] px-2 py-1.5 rounded-lg transition-colors border',
-                            hasPromo
-                              ? 'text-orange-700 bg-white border-orange-200 ring-1 ring-orange-200 shadow-sm'
-                              : 'text-slate-600 bg-white border-slate-200 focus:border-orange-400 focus:ring-1 focus:ring-orange-300 shadow-sm'
-                          )}
-                        />
-                      </td>
-
-                      {/* Promo Stock */}
-                      <td className="px-4 py-3 text-center bg-orange-50/20">
-                        <input
-                          type="number"
-                          min={0}
-                          value={p.promoStock}
-                          onChange={e => updateEntry(p.sku, 'promoStock', e.target.value)}
-                          placeholder="Units"
-                          className={clsx(
-                            'w-full text-center focus:outline-none font-bold text-[11px] px-2 py-1.5 rounded-lg transition-colors border',
-                            hasStock
-                              ? 'text-orange-700 bg-white border-orange-200 ring-1 ring-orange-200 shadow-sm'
-                              : 'text-slate-600 bg-white border-slate-200 focus:border-orange-400 focus:ring-1 focus:ring-orange-300 shadow-sm'
-                          )}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           )}
         </div>
-
-        {/* Footer Ã¢ÂÂ submit */}
-        {!loading && entries.length > 0 && (
-          <div className="px-5 py-4 bg-white/90 backdrop-blur border-t border-slate-200 flex items-center justify-between shadow-[0_-4px_12px_rgb(0,0,0,0.02)]">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
-              Fill Promo Price &amp; Stock to mark a product ready
-            </p>
-            <button
-              onClick={() => setIsReviewing(true)}
-              disabled={readyEntries.length === 0 || submitting}
-              className="ml-auto bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <Eye className="w-4 h-4" />
-              Review Promotional Prices
-            </button>
-          </div>
-        )}
-      </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }
