@@ -468,7 +468,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-orange-50 border-b border-orange-200 text-orange-600">
                     <th className="px-3 py-3 text-center font-semibold tracking-wide">Brand</th>
-                    <th className="px-3 py-3 text-left font-semibold tracking-wide">Model Name</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Model Name</th>
                     <th className="px-3 py-3 text-center font-semibold tracking-wide">Current Price</th>
                     <th className="px-3 py-3 text-center font-semibold tracking-wide">Best Price</th>
                     <th className="px-3 py-3 text-center font-semibold tracking-wide text-orange-700 bg-orange-100/60">Promo Price</th>
@@ -493,7 +493,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                         </td>
 
                         {/* Model Name + SKU */}
-                        <td className="px-3 py-3 text-left">
+                        <td className="px-3 py-3 text-center overflow-hidden max-w-0">
                           <span className="block font-semibold text-slate-800 truncate leading-tight text-[11px]" title={p.model_name}>
                             {p.model_name || '—'}
                           </span>
