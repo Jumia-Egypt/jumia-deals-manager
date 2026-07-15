@@ -17,7 +17,7 @@ import LiveSkus from './components/LiveSkus';
 import type { Campaign } from './types';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('calendar');
+  const [activeTab, setActiveTab] = useState(() => { try { return sessionStorage.getItem('jdm_tab') || 'calendar'; } catch { return 'calendar'; } });
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(() => { try { return sessionStorage.getItem('jdm_loggedIn') === '1'; } catch { return false; } });
   const [userRole, setUserRole] = useState<'admin' | 'vendor' | null>(() => { try { return (sessionStorage.getItem('jdm_role') as 'admin' | 'vendor' | null) || null; } catch { return null; } });
@@ -25,7 +25,7 @@ export default function App() {
   const [loggedInVendorId, setLoggedInVendorId] = useState<string | null>(() => { try { return sessionStorage.getItem('jdm_vid') || null; } catch { return null; } });
 
   const handleNavigate = (tab: string) => {
-    setActiveTab(tab);
+    setActiveTab(tab); try { sessionStorage.setItem('jdm_tab', tab); } catch {}
     if (tab !== 'calendar') {
       setSelectedCampaign(null);
     }
@@ -48,7 +48,7 @@ export default function App() {
 
   return (
     <Layout activeTab={activeTab} onNavigate={handleNavigate} onLogout={() => {
-      sessionStorage.removeItem('jdm_loggedIn'); sessionStorage.removeItem('jdm_role'); sessionStorage.removeItem('jdm_name'); sessionStorage.removeItem('jdm_vid'); setIsLoggedIn(false);
+      sessionStorage.removeItem('jdm_loggedIn'); sessionStorage.removeItem('jdm_role'); sessionStorage.removeItem('jdm_name'); sessionStorage.removeItem('jdm_vid'); sessionStorage.removeItem('jdm_tab'); setIsLoggedIn(false);
       setUserRole(null);
       setUserName('');
       setLoggedInVendorId(null);
