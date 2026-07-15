@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign } from '../types';
-import { ChevronLeft, ChevronRight, Calendar, Clock, Plus, Edit2, Save, X, Trash2, Smartphone, Tablet, Headphones, Laptop, Mouse, Gamepad2, Shirt, Microwave, Coffee, Refrigerator, Tv, Sparkles, ChevronDown, Check, Megaphone, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, Plus, Edit2, Save, X, Trash2, Smartphone, Tablet, Headphones, Laptor, Mouse, Gamepad2, Shirt, Microwave, Coffee, Refrigerator, Tv, Sparkles, ChevronDown, Check, Megaphone, Users } from 'lucide-react';
 import { getCampaignStyle } from '../utils';
 import clsx from 'clsx';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
@@ -107,7 +107,7 @@ function CustomDropdown({
   );
 }
 
-function DateTimePicker({ value, onChange, label, hasError, isValid }: { value: string, onChange: (val: string) => void, label: string, hasError?: boolean, isValid?: boolean }) {
+function DateTimePicker({ value, onChange, label, hasError, isValid, openUp }: { value: string, onChange: (val: string) => void, label: string, hasError?: boolean, isValid?: boolean, openUp?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(value ? new Date(value) : new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(value ? new Date(value) : new Date());
@@ -186,7 +186,7 @@ function DateTimePicker({ value, onChange, label, hasError, isValid }: { value: 
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="absolute z-50 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl p-4 w-72 left-0 right-auto"
+              className={clsx("absolute z-[200] bg-white border border-slate-200 rounded-xl shadow-xl p-4 w-72 left-0 right-auto", openUp ? "bottom-full mb-2" : "mt-2")}
             >
               <div className="flex justify-between items-center mb-4">
                 <button type="button" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors">
@@ -516,7 +516,7 @@ export function AdminDashboard() {
           const deadline = new Date(formData.rules?.submissionDeadline || '');
           const isDeadlineValid = !isNaN(deadline.getTime()) && !isNaN(startDate.getTime()) && deadline <= startDate;
           const isDeadlineError = !isNaN(deadline.getTime()) && !isNaN(startDate.getTime()) && deadline > startDate;
-          return <DateTimePicker label="Submission Deadline" value={formData.rules?.submissionDeadline || ''} onChange={val => setFormData({...formData, rules: {...formData.rules!, submissionDeadline: val}})} hasError={isDeadlineError} isValid={isDeadlineValid} />;
+          return <DateTimePicker label="Submission Deadline" value={formData.rules?.submissionDeadline || ''} onChange={val => setFormData({...formData, rules: {...formData.rules!, submissionDeadline: val}})} hasError={isDeadlineError} isValid={isDeadlineValid} openUp />;
         })()}
         <div>
           <label className="text-xs font-bold block mb-1">Notes (e.g., Minimum SKUs)</label>
@@ -596,7 +596,7 @@ export function AdminDashboard() {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-4xl overflow-hidden flex flex-col my-8"
+                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-4xl flex flex-col my-8"
               >
                 <div className="flex justify-between items-center p-6 border-b border-slate-100">
                   <h3 className="text-xl font-bold text-slate-900">{editingId === 'new' ? 'Add Campaign' : 'Edit Campaign'}</h3>
@@ -636,9 +636,4 @@ export function AdminDashboard() {
                 </div>
               </motion.div>
             </div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
+          
