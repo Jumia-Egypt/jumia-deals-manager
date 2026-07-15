@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign } from '../types';
-import { ChevronLeft, ChevronRight, Calendar, Clock, Plus, Edit2, Save, X, Trash2, Smartphone, Tablet, Headphones, Laptor, Mouse, Gamepad2, Shirt, Microwave, Coffee, Refrigerator, Tv, Sparkles, ChevronDown, Check, Megaphone, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, Plus, Edit2, Save, X, Trash2, Smartphone, Tablet, Headphones, Laptop, Mouse, Gamepad2, Shirt, Microwave, Coffee, Refrigerator, Tv, Sparkles, ChevronDown, Check, Megaphone, Users } from 'lucide-react';
 import { getCampaignStyle } from '../utils';
 import clsx from 'clsx';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
@@ -578,7 +578,7 @@ export function AdminDashboard() {
             </div>
           ))}
           {campaigns.length === 0 && (
-            <div className="bg-white border border-slate-200 p-12 rounded-xl shadow-sm flex flex-col items-center justify-center text-center">
+            <div classNama="bg-white border border-slate-200 p-12 rounded-xl shadow-sm flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                 <Calendar className="w-8 h-8 text-slate-300" />
               </div>
@@ -636,4 +636,9 @@ export function AdminDashboard() {
                 </div>
               </motion.div>
             </div>
-          
+                       )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
