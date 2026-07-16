@@ -13,6 +13,7 @@ function cors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
+// Parse URL path into parts array, stripping /api/ prefix
 function parsePath(url) {
   const path = (url || '').split('?')[0];
   const stripped = path.replace(/^\/api\/?/, '');
@@ -45,6 +46,7 @@ module.exports = async function handler(req, res) {
   const q = req.query || {};
   const body = req.body || {};
 
+  // ── POST /api/auth/login ──────────────────────────────────────────────────
   if (parts[0] === 'auth' && parts[1] === 'login') {
     const { email, password } = body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -57,6 +59,7 @@ module.exports = async function handler(req, res) {
     return res.json({ id: data.id, name: data.name, email: data.email, role: data.role.toLowerCase(), vendorId: data.id });
   }
 
+  // ── /api/campaigns ────────────────────────────────────────────────────────
   if (parts[0] === 'campaigns' && !parts[1]) {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('campaigns_v2').select('*').order('created_at', { ascending: false });
@@ -76,6 +79,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── /api/campaigns/:id ────────────────────────────────────────────────────
   if (parts[0] === 'campaigns' && parts[1] && !parts[2]) {
     const id = parts[1];
     if (req.method === 'GET') {
@@ -101,12 +105,13 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── /api/performance ──────────────────────────────────────────────────────
   if (parts[0] === 'performance' && !parts[1]) {
     if (req.method === 'GET') {
       const { vendor_id } = q;
       if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
       const { data, error } = await supabase.from('vendor_performance')
-        .select('date,gmv,gross_orders,gross_items')
+        .select('date,gmv,gross_orders,gross_items,models_data')
         .eq('vendor_id', vendor_id).order('date', { ascending: true });
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data || []);
@@ -120,6 +125,7 @@ module.exports = async function handler(req, res) {
         gmv: parseFloat(r.gmv) || 0,
         gross_orders: parseInt(r.gross_orders) || 0,
         gross_items: parseInt(r.gross_items) || 0,
+        models_data: Array.isArray(r.models_data) ? r.models_data : [],
       })).filter(r => r.date);
       if (records.length === 0) return res.status(400).json({ error: 'No valid rows after filtering' });
       const { error } = await supabase.from('vendor_performance').upsert(records, { onConflict: 'vendor_id,date' });
@@ -135,6 +141,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── /api/products (no SKU) — list / save / delete by vendor_id ───────────
   if (parts[0] === 'products' && !parts[1]) {
     if (req.method === 'GET') {
       const { vendor_id } = q;
@@ -184,6 +191,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── GET /api/products/:sku ────────────────────────────────────────────────
   if (parts[0] === 'products' && parts[1] && !parts[2]) {
     const sku = decodeURIComponent(parts[1]);
     const { data, error } = await supabase.from('products')
@@ -197,6 +205,7 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // ── PUT /api/submissions/:id/products/:sku/status ─────────────────────────
   if (parts[0] === 'submissions' && parts[1] && parts[2] === 'products' && parts[3] && parts[4] === 'status') {
     const id = parts[1], sku = decodeURIComponent(parts[3]);
     if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
@@ -212,87 +221,7 @@ module.exports = async function handler(req, res) {
     const approved = products.filter(p => p.status === 'Approved').length;
     const rejected = products.filter(p => p.status === 'Rejected').length;
     const pending  = products.filter(p => p.status === 'Pending').length;
-    const newStatus = pending > 0 ? 'Pending' : approved === total ? 'Approved' : rejected === total ? 'Rejected' : 'Partially Approved';
-    const { data, error } = await supabase.from('submissions_v2').update({ status: newStatus, products }).eq('id', id).select().single();
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ success: true, submission: mapSubmission(data) });
-  }
-
-  if (parts[0] === 'submissions' && parts[1] && parts[2] === 'status' && !parts[3]) {
-    const id = parts[1];
-    if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
-    const { status } = body;
-    if (!status) return res.status(400).json({ error: 'Status is required' });
-    const { data: existing, error: fetchErr } = await supabase.from('submissions_v2').select('*').eq('id', id).single();
-    if (fetchErr || !existing) return res.status(404).json({ error: 'Submission not found' });
-    const updatedProducts = (existing.products || []).map(p => ({ ...p, status }));
-    const { data, error } = await supabase.from('submissions_v2').update({ status, products: updatedProducts }).eq('id', id).select().single();
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ success: true, submission: mapSubmission(data) });
-  }
-
-  if (parts[0] === 'submissions' && parts[1] && !parts[2]) {
-    const id = parts[1];
-    if (req.method === 'GET') {
-      const { data, error } = await supabase.from('submissions_v2').select('*').eq('id', id).single();
-      if (error) return res.status(404).json({ error: 'Submission not found' });
-      return res.json(mapSubmission(data));
-    }
-    if (req.method === 'DELETE') {
-      const { error } = await supabase.from('submissions_v2').delete().eq('id', id);
-      if (error) return res.status(500).json({ error: error.message });
-      return res.json({ success: true });
-    }
-  }
-
-  if (parts[0] === 'submissions' && !parts[1]) {
-    if (req.method === 'GET') {
-      let query = supabase.from('submissions_v2').select('*').order('submitted_at', { ascending: false });
-      if (q.vendorId) query = query.eq('vendor_id', q.vendorId);
-      const { data, error } = await query;
-      if (error) return res.status(500).json({ error: error.message });
-      return res.json((data || []).map(mapSubmission));
-    }
-    if (req.method === 'POST') {
-      const { campaignId, products: submittedProducts, vendorId, vendorName } = body;
-      if (!campaignId || !submittedProducts || submittedProducts.length === 0)
-        return res.status(400).json({ success: false, error: 'Invalid submission data' });
-      const { data: camp } = await supabase.from('campaigns_v2').select('name').eq('id', campaignId).single();
-      const campaignName = camp?.name || 'Active Campaign';
-      const submissionId = `SUB-${randomUUID().slice(0, 8).toUpperCase()}`;
-      const enrichedProducts = submittedProducts.map(p => {
-        const cat = CATALOG[p.sku] || { name: 'Mobile Phone', brand: 'Generic', category: 'Phones', livePrice: 10000, bestPrice: 8900 };
-        return { sku: p.sku, name: cat.name, category: cat.category, brand: cat.brand, livePrice: cat.livePrice, bestPrice: cat.bestPrice, promoPrice: parseFloat(p.price), promoStock: parseInt(p.stock), status: 'Pending' };
-      });
-      const { error } = await supabase.from('submissions_v2').insert({
-        id: submissionId, campaign_id: campaignId, campaign_name: campaignName,
-        vendor_id: vendorId || '884920', vendor_name: vendorName || 'Vendor',
-        status: 'Pending', products: enrichedProducts,
-      });
-      if (error) return res.status(500).json({ success: false, error: error.message });
-      return res.json({ success: true, submissionId, timestamp: new Date().toISOString(), message: 'Prices submitted successfully!' });
-    }
-    if (req.method === 'DELETE') {
-      const { error } = await supabase.from('submissions_v2').delete().neq('id', 'no-match');
-      if (error) return res.status(500).json({ success: false, error: error.message });
-      return res.json({ success: true, message: 'All submissions deleted' });
-    }
-  }
-
-  if (parts[0] === 'validate-price') {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-    const { sku, newPrice, newStock, campaignId } = body;
-    if (!sku || !newPrice || !newStock || !campaignId)
-      return res.status(400).json({ valid: false, error: 'Missing required fields' });
-    const { data: campaign } = await supabase.from('campaigns_v2').select('rules').eq('id', campaignId).single();
-    const rules = campaign?.rules || { minDiscount: 5, maxDiscount: 80, eligibleCategories: ['Electronics', 'Fashion', 'Home', 'Appliances'] };
-    const VALIDATE_CATALOG = {
-      "123456EG": { livePrice: 45000, bestPrice: 41500, priceBeforeDiscount: 48000, stock: 120, minMargin: 40000, category: "Phones" },
-      "789012EG": { livePrice: 12000, bestPrice: 10900, priceBeforeDiscount: 14000, stock: 45, minMargin: 10500, category: "Phones accessories" },
-      "456789EG": { livePrice: 5500, bestPrice: 4800, priceBeforeDiscount: 7000, stock: 200, minMargin: 4500, category: "Fashion" },
-    };
-    const product = VALIDATE_CATALOG[sku] || { livePrice: 10000, bestPrice: 8900, priceBeforeDiscount: 12000, stock: 100, minMargin: 5000, category: rules.eligibleCategories[0] || 'Phones' };
-    const price = parseFloat(newPrice), stock = parseInt(newStock), errors = [];
+    const newStatus = pending > 0 ? 'Pending' : approved === total ? 'Approved' : rejected === total ? 'Rejected' : 'Partially Approvnt(newStock), errors = [];
     if (isNaN(price)) { errors.push('Invalid price format'); }
     else if (price >= product.livePrice) { errors.push('Promo price must be lower than current live price'); }
     else {
@@ -311,6 +240,7 @@ module.exports = async function handler(req, res) {
     return res.json({ valid: true, discountPercent: finalDiscount.toFixed(2), savings: (product.priceBeforeDiscount - price).toFixed(2), message: 'Valid campaign price. Ready for submission.' });
   }
 
+  // ── /api/vendors ──────────────────────────────────────────────────────────
   if (parts[0] === 'vendors') {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('users')
@@ -347,8 +277,3 @@ module.exports = async function handler(req, res) {
       const { error } = await supabase.from('users').delete().eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
       return res.json({ success: true });
-    }
-  }
-
-  return res.status(404).json({ error: 'Not found', path: req.url });
-};
