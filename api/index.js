@@ -361,3 +361,8 @@ module.exports = async function handler(req, res) {
       const { error } = await supabase.from('users').delete().eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
       return res.json({ success: true });
+    }
+  }
+
+  return res.status(404).json({ error: 'Not found', path: req.url });
+};
