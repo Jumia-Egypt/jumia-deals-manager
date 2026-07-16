@@ -52,6 +52,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           gmv: Number(r.gmv),
           orders: Number(r.gross_orders),
           items: Number(r.gross_items),
+          models: Array.isArray(r.models_data) ? r.models_data : [],
         }));
         const achievementGMV = dailyData.reduce((s: number, r: any) => s + r.gmv, 0);
         const countOfOrders  = dailyData.reduce((s: number, r: any) => s + r.orders, 0);
@@ -160,7 +161,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
               className={clsx(
                 "px-4 py-2 rounded-md text-sm font-bold transition-all",
                 activeMetric === 'gmv' ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              )}
+               )}
             >
               GMV
             </button>
@@ -180,8 +181,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                 activeMetric === 'items' ? "bg-white text-purple-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
             >
-              Gross IS
-            </button>
+              Gross IS            </button>
           </div>
         </div>
 
@@ -283,6 +283,65 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           </div>
         )}
 
+        {/* ── Model Performance Card ── */}
+        {(() => {
+          // Build model rows: if a date is selected use that day's models, else sum across all days
+          const modelRows: { name: string; items: number }[] = [];
+          if (selectedDay) {
+            const dayModels: any[] = selectedDay.models || [];
+            dayModels.forEach((m: any) => {
+              modelRows.push({ name: m.name, items: Number(m.items || 0) });
+            });
+          } else {
+            const agg = new Map<string, number>();
+            chartData.forEach((day: any) => {
+              (day.models || []).forEach((m: any) => {
+                agg.set(m.name, (agg.get(m.name) || 0) + Number(m.items || 0));
+              });
+            });
+            agg.forEach((items, name) => modelRows.push({ name, items }));
+          }
+          modelRows.sort((a, b) => b.items - a.items);
+          if (modelRows.length === 0) return null;
+          return (
+            <div className="mt-4 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+                <Package className="w-4 h-4 text-orange-500" />
+                <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
+                  {selectedDay ? `Model Breakdown — ${selectedDay.date}` : 'Model Performance — All Dates'}
+                </h4>
+                <span className="ml-auto text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-lg">
+                  {modelRows.length} model{modelRows.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {modelRows.map((m, idx) => {
+                  const maxItems = modelRows[0]?.items || 1;
+                  const barPct = Math.round((m.items / maxItems) * 100);
+                  return (
+                    <div key={m.name} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                      <span className="text-[11px] font-bold text-slate-400 w-5 shrink-0 text-right">{idx + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-800 truncate" title={m.name}>{m.name}</p>
+                        <div className="mt-1 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-orange-400 rounded-full transition-all duration-500"
+                            style={{ width: `${barPct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-sm font-extrabold text-slate-800 shrink-0 tabular-nums">
+                        {m.items.toLocaleString()}
+                        <span className="text-[10px] font-medium text-slate-400 ml-1">IS</span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="mt-6 pt-6 border-t border-slate-100">
           <AnimatePresence mode="wait">
             {selectedDay ? (
@@ -305,65 +364,4 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                   <button
                     type="button"
                     onClick={() => setSelectedDay(null)}
-                    className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/50"
-                  >
-                    Clear Selection
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
-                    <div className="p-2.5 bg-orange-500/10 rounded-lg text-orange-600">
-                      <TrendingUp className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">GMV Achievement</p>
-                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
-                        {Number(selectedDay.gmv || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">EGP</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
-                    <div className="p-2.5 bg-blue-500/10 rounded-lg text-blue-600">
-                      <ShoppingCart className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Count of Orders</p>
-                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
-                        {Number(selectedDay.orders || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">Orders</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
-                    <div className="p-2.5 bg-purple-500/10 rounded-lg text-purple-600">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gross Items Sold (IS)</p>
-                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
-                        {Number(selectedDay.items || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">Items</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="placeholder"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-2.5 text-xs font-semibold text-slate-400 bg-slate-50 p-4 rounded-xl border border-slate-100"
-              >
-                <Info className="w-4 h-4 text-orange-500 shrink-0" />
-                <span>Tip: Click on any date point inside the graph above to view its detailed breakdown for GMV, Orders, and Gross IS.</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
-  );
-}
+                    className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg bo
