@@ -161,7 +161,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
               className={clsx(
                 "px-4 py-2 rounded-md text-sm font-bold transition-all",
                 activeMetric === 'gmv' ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-               )}
+              )}
             >
               GMV
             </button>
@@ -181,7 +181,8 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                 activeMetric === 'items' ? "bg-white text-purple-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
             >
-              Gross IS            </button>
+              Gross IS
+            </button>
           </div>
         </div>
 
