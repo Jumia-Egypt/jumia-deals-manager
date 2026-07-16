@@ -493,7 +493,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                         </td>
 
                         {/* Model Name + SKU */}
-                        <td className="px-3 py-3 text-center overflow-hidden max-w-0">
+                        <td className="px-3 py-3 text-left overflow-hidden max-w-0">
                           <span className="block font-semibold text-slate-800 truncate leading-tight text-[11px]" title={p.model_name}>
                             {p.model_name || '—'}
                           </span>
