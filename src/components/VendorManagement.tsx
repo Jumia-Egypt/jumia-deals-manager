@@ -766,7 +766,119 @@ export function VendorManagement() {
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex i<Plus className="w-4 h-4" /> Add Day
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-xl text-blue-500">
+              <ShoppingCart className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Orders & Items</p>
+              <h3 className="text-xl font-bold text-slate-800 mt-0.5">
+                {Number(selectedVendor.countOfOrders || 0).toLocaleString()} <span className="text-xs font-medium text-slate-400">Orders</span>
+                <span className="mx-1.5 text-slate-300">/</span>
+                {Number(selectedVendor.grossItemSold || 0).toLocaleString()} <span className="text-xs font-medium text-slate-400">Items</span>
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Overall Target</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 block mb-1.5 uppercase tracking-wider">Target GMV (EGP)</label>
+                    <input
+                      type="number"
+                      value={selectedVendor.targetGMV}
+                      onChange={(e) => handleUpdateVendor({ ...selectedVendor, targetGMV: Number(e.target.value) })}
+                      className="w-full max-w-md border border-slate-300 p-2.5 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm font-semibold text-slate-700"
+                    />
+                    <span className="text-xs font-semibold text-slate-400 mt-1.5 block">
+                      Formatted: <span className="font-bold text-orange-600">{Number(selectedVendor.targetGMV || 0).toLocaleString()} EGP</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right free space - Bulk File Upload Dropzone */}
+              <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-orange-500" />
+                    Bulk Import Daily Data
+                  </h3>
+                </div>
+
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={clsx(
+                    "border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]",
+                    isDragging
+                      ? "border-orange-500 bg-orange-50/50 animate-pulse"
+                      : "border-slate-200 hover:border-orange-400 hover:bg-slate-50/50"
+                  )}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept=".xlsx,.xls,.csv,.tsv,.ods,.txt"
+                    className="hidden"
+                  />
+                  <div className="p-3 bg-orange-50 rounded-full text-orange-500">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-700">Drag & drop your report file here</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, TSV or any spreadsheet format (.xlsx, .csv, .tsv, .ods)</p>
+                  </div>
+                </div>
+
+                {/* Upload status message */}
+                <AnimatePresence mode="wait">
+                  {uploadStatus !== 'idle' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      className={clsx(
+                        "p-3 rounded-xl text-xs flex items-center gap-2.5 font-semibold",
+                        uploadStatus === 'success' ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
+                      )}
+                    >
+                      {uploadStatus === 'success' ? (
+                        <Check className="w-4 h-4 text-green-500 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                      )}
+                      <span className="flex-1">{uploadMessage}</span>
+                      <button
+                        type="button"
+                        onClick={() => setUploadStatus('idle')}
+                        className="text-[10px] font-bold uppercase tracking-wider opacity-60 hover:opacity-100"
+                      >
+                        Clear
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-slate-800">Daily Achievements</h3>
+              <button
+                onClick={handleAddDailyData}
+                className="bg-orange-50 text-orange-600 hover:bg-orange-100 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Add Day
               </button>
             </div>
 
@@ -886,7 +998,127 @@ export function VendorManagement() {
           <button
             type="button"
             onClick={handleSubmitInputs}
-            className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white rounded-xl text-sm fName="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white rounded-xl text-sm font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Submit Inputs
+          </button>
+        </div>
+
+        {/* Custom Manage Profile Modal in Vendor View */}
+        <AnimatePresence>
+          {isEditingProfile && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col p-6"
+              >
+                <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-orange-500" />
+                  Manage Vendor Profile
+                </h3>
+                <p className="text-xs text-slate-400 mb-4">
+                  Update login credentials and account settings for <span className="font-bold text-slate-600">{selectedVendor?.name}</span>.
+                </p>
+
+                {editProfileError && (
+                  <div className="p-3 bg-red-50 text-red-600 text-xs font-semibold rounded-xl border border-red-100 mb-4">
+                    {editProfileError}
+                  </div>
+                )}
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Vendor Name</label>
+                    <input
+                      type="text"
+                      value={editVendorName}
+                      onChange={(e) => setEditVendorName(e.target.value)}
+                      className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-semibold text-slate-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Login Email</label>
+                    <input
+                      type="email"
+                      value={editVendorEmail}
+                      onChange={(e) => setEditVendorEmail(e.target.value)}
+                      className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-semibold text-slate-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Login Password</label>
+                    <input
+                      type="text"
+                      value={editVendorPassword}
+                      onChange={(e) => setEditVendorPassword(e.target.value)}
+                      className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-mono font-semibold text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    className="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveProfile(selectedVendor?.id)}
+                    className="px-5 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-sm shadow-orange-500/10"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Account Management</h2>
+          <p className="text-sm text-slate-500 mt-1">Manage vendor and admin accounts for the portal.</p>
+        </div>
+        <div className="flex gap-2 self-stretch sm:self-auto">
+          <button
+            onClick={() => { setIsAddingVendor(!isAddingVendor); setIsAddingAdmin(false); }}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all justify-center"
+          >
+            {isAddingVendor ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+            {isAddingVendor ? 'Cancel' : 'Add Vendor'}
+          </button>
+          <button
+            onClick={() => { setIsAddingAdmin(!isAddingAdmin); setIsAddingVendor(false); }}
+            className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm transition-all justify-center"
+          >
+            {isAddingAdmin ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+            {isAddingAdmin ? 'Cancel' : 'Add Admin'}
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isAddingVendor && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <form onSubmit={handleAddVendor} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <UserPlus className="w-5 h-5 text-orange-500" />
                 Create New Vendor Account
@@ -1037,4 +1269,196 @@ export function VendorManagement() {
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col gap-1 text-slate-600 text-xs">
-                        <div class
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{vendor.email || `${vendor.id}@vendor.com`}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
+                            {isPassVisible ? (vendor.password || 'password123') : '••••••••'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => togglePasswordVisibility(vendor.id, e)}
+                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                            title={isPassVisible ? "Hide Password" : "Show Password"}
+                          >
+                            {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="font-semibold text-slate-700">
+                        {vendor.targetGMV.toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-bold text-slate-900">{vendor.achievementGMV.toLocaleString()}</span>
+                        <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${progress >= 100 ? 'bg-green-500' : 'bg-orange-500'}`}
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-right font-semibold text-slate-700">
+                      {vendor.countOfOrders.toLocaleString()}
+                    </td>
+                    <td className="p-4 text-right font-semibold text-slate-700">
+                      {vendor.grossItemSold.toLocaleString()}
+                    </td>
+                    <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteVendor(vendor.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center justify-center"
+                        title="Delete Vendor Account"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Admin Accounts Table */}
+      {vendors.some((v: any) => v.role?.toUpperCase() === 'ADMIN') && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-800/20 overflow-hidden">
+          <div className="px-4 pt-4 pb-2">
+            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Admin Accounts</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-bold">
+                  <th className="p-4">Admin</th>
+                  <th className="p-4">Credentials (Email / Password)</th>
+                  <th className="p-4 text-center w-16">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {vendors.filter((v: any) => v.role?.toUpperCase() === 'ADMIN').map((vendor: any) => {
+                  const isPassVisible = visiblePasswords[vendor.id];
+                  return (
+                    <tr key={vendor.id} className="hover:bg-slate-50 transition-colors text-sm">
+                      <td className="p-4">
+                        <div className="font-bold text-slate-900">{vendor.name}</div>
+                        <div className="text-xs text-slate-400 mt-0.5 font-mono">ID: {vendor.id}</div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col gap-1 text-slate-600 text-xs">
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{vendor.email}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
+                              {isPassVisible ? (vendor.password || '••••••••') : '••••••••'}
+                            </span>
+                            <button type="button" onClick={(e) => togglePasswordVisibility(vendor.id, e)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors">
+                              {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button type="button" onClick={() => handleDeleteVendor(vendor.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center justify-center" title="Delete Admin Account">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+            {/* Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {vendorToDeleteId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col p-6"
+            >
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Vendor Account</h3>
+              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                Are you sure you want to delete this vendor account? This action cannot be undone and will permanently remove all associated daily target records and credentials.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setVendorToDeleteId(null)}
+                  className="px-4 py-2 border border-slate-200 rounded-lg font-medium text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteVendor}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition-colors shadow-sm shadow-red-500/10"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Manage Profile Modal */}
+      <AnimatePresence>
+        {isEditingProfile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col p-6"
+            >
+              <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-orange-500" />
+                Manage Vendor Profile
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Update login credentials and account settings for <span className="font-bold text-slate-600">{selectedVendor?.name}</span>.
+              </p>
+
+              {editProfileError && (
+                <div className="p-3 bg-red-50 text-red-600 text-xs font-semibold rounded-xl border border-red-100 mb-4">
+                  {editProfileError}
+                </div>
+              )}
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Vendor Name</label>
+                  <input
+                    type="text"
+                    value={editVendorName}
+                    onChange={(e) => setEditVendorName(e.target.value)}
+                    className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-semibold text-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Login Email</label>
+                  <input
+                    type="email"
+                    value={editVendorEmail}
+                    onChange={(e) => setEditVendorEmail(e.target.value)}
+                    className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-semibold text-slate-700"
+       
