@@ -148,7 +148,7 @@ export function Layout({ children, activeTab = 'calendar', onNavigate, onLogout,
       <main className="flex-1 flex flex-col overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-slate-50/80 to-transparent pointer-events-none"></div>
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 relative">
-          <div className="max-w-[1600px] mx-auto relative h-full">
+          <div className="max-w-full mx-auto relative h-full">
             {children}
           </div>
         </div>
