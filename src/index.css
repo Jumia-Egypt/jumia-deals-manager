@@ -33,3 +33,12 @@ svg:focus,
 svg:focus-visible {
   outline: none !important;
 }
+
+
+/* ── Orange scrollbar (Chrome/Safari/Edge) ── */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #f97316; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #ea580c; }
+/* Firefox */
+* { scrollbar-color: #f97316 #f1f5f9; scrollbar-width: thin; }
