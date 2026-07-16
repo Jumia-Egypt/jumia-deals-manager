@@ -403,42 +403,14 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (!selectedVendor || parsedDailyData.length === 0) return;
 
-    // Group raw rows by date (Excel may have multiple product rows per date)
-    const byDate = new Map<string, { gmv: number; orders: number; items: number; models: Map<string, { gmv: number; orders: number; items: number }> }>();
-    for (const r of parsedDailyData) {
-      if (!byDate.has(r.date)) {
-        byDate.set(r.date, { gmv: 0, orders: 0, items: 0, models: new Map() });
-      }
-      const day = byDate.get(r.date)!;
-      day.gmv    += Number(r.gmv    || 0);
-      day.orders += Number(r.orders || 0);
-      day.items  += Number(r.items  || 0);
-      if (r.modelName) {
-        const existing = day.models.get(r.modelName) || { gmv: 0, orders: 0, items: 0 };
-        existing.gmv    += Number(r.gmv    || 0);
-        existing.orders += Number(r.orders || 0);
-        existing.items  += Number(r.items  || 0);
-        day.models.set(r.modelName, existing);
-      }
-    }
-
-    // Build grouped array sorted by date
-    const grouped: any[] = [];
-    byDate.forEach((val, date) => {
-      const models_data = Array.from(val.models.entries()).map(([name, d]) => ({
-        name, gmv: d.gmv, orders: d.orders, items: d.items,
-      }));
-      grouped.push({ date, gmv: val.gmv, orders: val.orders, items: val.items, models_data });
-    });
-    grouped.sort((a, b) => a.date.localeCompare(b.date));
-
-    const totalGmv    = grouped.reduce((acc, curr) => acc + curr.gmv, 0);
-    const totalOrders = grouped.reduce((acc, curr) => acc + curr.orders, 0);
-    const totalItems  = grouped.reduce((acc, curr) => acc + curr.items, 0);
+    // date is already YYYY-MM-DD — no conversion needed
+    const totalGmv    = parsedDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
+    const totalOrders = parsedDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
+    const totalItems  = parsedDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
 
     handleUpdateVendor({
       ...selectedVendor,
-      dailyData: grouped,
+      dailyData: parsedDailyData,
       achievementGMV: totalGmv,
       countOfOrders: totalOrders,
       grossItemSold: totalItems
@@ -446,13 +418,12 @@ export function VendorManagement() {
 
     // Persist to Supabase via API
     try {
-      const apiRows = grouped
+      const apiRows = parsedDailyData
         .map(r => ({
           date: r.date,
           gmv: Number(r.gmv || 0),
           gross_orders: Number(r.orders || 0),
           gross_items: Number(r.items || 0),
-          models_data: r.models_data || [],
         }))
         .filter(r => r.date);
 
@@ -503,7 +474,6 @@ export function VendorManagement() {
           const gmvVal  = row['Gross Merchandise Value'] ?? row['GMV'] ?? row['gmv'] ?? row['achievedGMV'] ?? 0;
           const ordVal  = row['# Gross Orders']  ?? row['Gross Orders']  ?? row['Orders']  ?? row['orders']  ?? 0;
           const itmVal  = row['# Gross Items']   ?? row['Gross Items']   ?? row['Items']   ?? row['items']   ?? 0;
-          const modelVal = String(row['Product Name'] ?? row['Model Name'] ?? row['product_name'] ?? row['model_name'] ?? '').trim();
 
           // Skip blank / Total / NaN / filter rows
           if (dateVal === '' || dateVal == null) continue;
@@ -520,7 +490,7 @@ export function VendorManagement() {
           const orders = parseInt(String(ordVal).replace(/,/g, ''), 10) || 0;
           const items  = parseInt(String(itmVal).replace(/,/g, ''), 10) || 0;
 
-          parsed.push({ date: isoDate, gmv, orders, items, modelName: modelVal });
+          parsed.push({ date: isoDate, gmv, orders, items });
         }
 
         if (parsed.length === 0) {
@@ -530,10 +500,8 @@ export function VendorManagement() {
         }
 
         await handleBulkImportDailyData(parsed);
-        // Count unique dates for the success message
-        const uniqueDates = new Set(parsed.map((r: any) => r.date)).size;
         setUploadStatus('success');
-        setUploadMessage(`Successfully imported ${uniqueDates} day${uniqueDates !== 1 ? 's' : ''} (${parsed.length} product rows)!`);
+        setUploadMessage(`Successfully imported ${parsed.length} day${parsed.length !== 1 ? 's' : ''}!`);
       } catch (err: any) {
         setUploadStatus('error');
         setUploadMessage(`Parsing error: ${err.message || 'Unknown error'}`);
@@ -1461,4 +1429,40 @@ export function VendorManagement() {
                     value={editVendorEmail}
                     onChange={(e) => setEditVendorEmail(e.target.value)}
                     className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-semibold text-slate-700"
-       
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Login Password</label>
+                  <input
+                    type="text"
+                    value={editVendorPassword}
+                    onChange={(e) => setEditVendorPassword(e.target.value)}
+                    className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-mono font-semibold text-slate-700"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveProfile(selectedVendor?.id)}
+                  className="px-5 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-sm shadow-orange-500/10"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
