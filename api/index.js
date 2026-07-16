@@ -221,7 +221,91 @@ module.exports = async function handler(req, res) {
     const approved = products.filter(p => p.status === 'Approved').length;
     const rejected = products.filter(p => p.status === 'Rejected').length;
     const pending  = products.filter(p => p.status === 'Pending').length;
-    const newStatus = pending > 0 ? 'Pending' : approved === total ? 'Approved' : rejected === total ? 'Rejected' : 'Partially Approvnt(newStock), errors = [];
+    const newStatus = pending > 0 ? 'Pending' : approved === total ? 'Approved' : rejected === total ? 'Rejected' : 'Partially Approved';
+    const { data, error } = await supabase.from('submissions_v2').update({ status: newStatus, products }).eq('id', id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true, submission: mapSubmission(data) });
+  }
+
+  // ── PUT /api/submissions/:id/status ───────────────────────────────────────
+  if (parts[0] === 'submissions' && parts[1] && parts[2] === 'status' && !parts[3]) {
+    const id = parts[1];
+    if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
+    const { status } = body;
+    if (!status) return res.status(400).json({ error: 'Status is required' });
+    const { data: existing, error: fetchErr } = await supabase.from('submissions_v2').select('*').eq('id', id).single();
+    if (fetchErr || !existing) return res.status(404).json({ error: 'Submission not found' });
+    const updatedProducts = (existing.products || []).map(p => ({ ...p, status }));
+    const { data, error } = await supabase.from('submissions_v2').update({ status, products: updatedProducts }).eq('id', id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true, submission: mapSubmission(data) });
+  }
+
+  // ── GET/DELETE /api/submissions/:id ───────────────────────────────────────
+  if (parts[0] === 'submissions' && parts[1] && !parts[2]) {
+    const id = parts[1];
+    if (req.method === 'GET') {
+      const { data, error } = await supabase.from('submissions_v2').select('*').eq('id', id).single();
+      if (error) return res.status(404).json({ error: 'Submission not found' });
+      return res.json(mapSubmission(data));
+    }
+    if (req.method === 'DELETE') {
+      const { error } = await supabase.from('submissions_v2').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json({ success: true });
+    }
+  }
+
+  // ── /api/submissions ──────────────────────────────────────────────────────
+  if (parts[0] === 'submissions' && !parts[1]) {
+    if (req.method === 'GET') {
+      let query = supabase.from('submissions_v2').select('*').order('submitted_at', { ascending: false });
+      if (q.vendorId) query = query.eq('vendor_id', q.vendorId);
+      const { data, error } = await query;
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json((data || []).map(mapSubmission));
+    }
+    if (req.method === 'POST') {
+      const { campaignId, products: submittedProducts, vendorId, vendorName } = body;
+      if (!campaignId || !submittedProducts || submittedProducts.length === 0)
+        return res.status(400).json({ success: false, error: 'Invalid submission data' });
+      const { data: camp } = await supabase.from('campaigns_v2').select('name').eq('id', campaignId).single();
+      const campaignName = camp?.name || 'Active Campaign';
+      const submissionId = `SUB-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const enrichedProducts = submittedProducts.map(p => {
+        const cat = CATALOG[p.sku] || { name: 'Mobile Phone', brand: 'Generic', category: 'Phones', livePrice: 10000, bestPrice: 8900 };
+        return { sku: p.sku, name: cat.name, category: cat.category, brand: cat.brand, livePrice: cat.livePrice, bestPrice: cat.bestPrice, promoPrice: parseFloat(p.price), promoStock: parseInt(p.stock), status: 'Pending' };
+      });
+      const { error } = await supabase.from('submissions_v2').insert({
+        id: submissionId, campaign_id: campaignId, campaign_name: campaignName,
+        vendor_id: vendorId || '884920', vendor_name: vendorName || 'Vendor',
+        status: 'Pending', products: enrichedProducts,
+      });
+      if (error) return res.status(500).json({ success: false, error: error.message });
+      return res.json({ success: true, submissionId, timestamp: new Date().toISOString(), message: 'Prices submitted successfully!' });
+    }
+    if (req.method === 'DELETE') {
+      const { error } = await supabase.from('submissions_v2').delete().neq('id', 'no-match');
+      if (error) return res.status(500).json({ success: false, error: error.message });
+      return res.json({ success: true, message: 'All submissions deleted' });
+    }
+  }
+
+  // ── POST /api/validate-price ──────────────────────────────────────────────
+  if (parts[0] === 'validate-price') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    const { sku, newPrice, newStock, campaignId } = body;
+    if (!sku || !newPrice || !newStock || !campaignId)
+      return res.status(400).json({ valid: false, error: 'Missing required fields' });
+    const { data: campaign } = await supabase.from('campaigns_v2').select('rules').eq('id', campaignId).single();
+    const rules = campaign?.rules || { minDiscount: 5, maxDiscount: 80, eligibleCategories: ['Electronics', 'Fashion', 'Home', 'Appliances'] };
+    const VALIDATE_CATALOG = {
+      "123456EG": { livePrice: 45000, bestPrice: 41500, priceBeforeDiscount: 48000, stock: 120, minMargin: 40000, category: "Phones" },
+      "789012EG": { livePrice: 12000, bestPrice: 10900, priceBeforeDiscount: 14000, stock: 45, minMargin: 10500, category: "Phones accessories" },
+      "456789EG": { livePrice: 5500, bestPrice: 4800, priceBeforeDiscount: 7000, stock: 200, minMargin: 4500, category: "Fashion" },
+    };
+    const product = VALIDATE_CATALOG[sku] || { livePrice: 10000, bestPrice: 8900, priceBeforeDiscount: 12000, stock: 100, minMargin: 5000, category: rules.eligibleCategories[0] || 'Phones' };
+    const price = parseFloat(newPrice), stock = parseInt(newStock), errors = [];
     if (isNaN(price)) { errors.push('Invalid price format'); }
     else if (price >= product.livePrice) { errors.push('Promo price must be lower than current live price'); }
     else {
