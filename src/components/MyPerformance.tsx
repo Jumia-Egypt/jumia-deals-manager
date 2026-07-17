@@ -12,6 +12,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
   const [activeMetric, setActiveMetric] = useState<'gmv' | 'orders' | 'items'>('gmv');
   const [vendorData, setVendorData] = useState<any>(null);
   const [selectedDay, setSelectedDay] = useState<any>(null);
+  const [modelsData, setModelsData] = useState<any[]>([]);
   const hoveredDayRef = useRef<any>(null);
 
   useEffect(() => {
@@ -33,6 +34,12 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
         if (found) { vendorName = found.name || vendorName; targetGMV = found.targetGMV || targetGMV; }
       }
     } catch {}
+
+    // Fetch models GIS data from Supabase via API
+    fetch(`/api/models?vendor_id=${vendorId}`)
+      .then(r => r.json())
+      .then(rows => { if (Array.isArray(rows)) setModelsData(rows); })
+      .catch(() => {});
 
     // Fetch daily performance from Supabase via API
     fetch(`/api/performance?vendor_id=${vendorId}`)
@@ -280,6 +287,48 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                 </button>
               );
             })}
+          </div>
+        )}
+
+
+        {modelsData.length > 0 && (
+          <div className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800">Model Performance — GIS</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {selectedDay ? `Items sold on ${selectedDay.date}` : 'All-time totals'}
+                </p>
+              </div>
+              {selectedDay && (
+                <span className="text-xs bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full font-medium">
+                  {selectedDay.date}
+                </span>
+              )}
+            </div>
+            <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
+              {(() => {
+                const filtered = selectedDay
+                  ? modelsData.filter((r: any) => r.date === selectedDay.date)
+                  : modelsData;
+                const grouped: Record<string, number> = {};
+                filtered.forEach((r: any) => {
+                  grouped[r.model_name] = (grouped[r.model_name] || 0) + Number(r.gross_items || 0);
+                });
+                const sorted = Object.entries(grouped)
+                  .sort(([, a], [, b]) => (b as number) - (a as number))
+                  .filter(([, v]) => (v as number) > 0);
+                if (sorted.length === 0) return (
+                  <p className="text-xs text-slate-400 text-center py-6">No items sold{selectedDay ? ' on this day' : ''}</p>
+                );
+                return sorted.map(([name, items]) => (
+                  <div key={name} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
+                    <span className="text-xs text-slate-700 flex-1 mr-4 leading-snug">{name}</span>
+                    <span className="text-xs font-bold text-orange-600 shrink-0 tabular-nums">{items as number} units</span>
+                  </div>
+                ));
+              })()}
+            </div>
           </div>
         )}
 
