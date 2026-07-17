@@ -593,7 +593,7 @@ export function AdminDashboard() {
         <AnimatePresence>
           {editingId && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-hidden">
-              <style>{`body { overflow: hidden; }`}</style>
+              <style>{`body { overflow: hidden; } .modal-scroll::-webkit-scrollbar { display: none; } .modal-scroll { scrollbar-width: none; }`}</style>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -606,7 +606,7 @@ export function AdminDashboard() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="p-4 space-y-3 flex-1 overflow-y-auto">
+                <div className="p-4 space-y-3 flex-1 overflow-y-auto modal-scroll">
                   {renderFormContent()}
                 </div>
               </motion.div>
