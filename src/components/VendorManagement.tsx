@@ -801,8 +801,6 @@ export function VendorManagement() {
                     <Upload className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-700">Drag & drop your report file here</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, TSV or any spreadsheet format (.xlsx, .csv, .tsv, .ods)</p>
                   </div>
                 </div>
 
@@ -844,8 +842,6 @@ export function VendorManagement() {
                         <Upload className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-slate-700">Drop file or click to upload</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Coming soon</p>
                       </div>
                     </div>
                   </div>
