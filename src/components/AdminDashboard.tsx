@@ -461,7 +461,7 @@ export function AdminDashboard() {
         <h4 className="font-bold">Rules</h4>
         <div>
           <label className="text-xs font-bold mb-2 block">Eligible Categories</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1 bg-white p-2 rounded-xl border border-slate-400 shadow-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-2 bg-white p-3 rounded-xl border border-slate-400 shadow-sm">
             {Object.keys(categoryIcons).map(cat => {
               const Icon = categoryIcons[cat];
               const isChecked = formData.rules?.eligibleCategories?.includes(cat) || false;
