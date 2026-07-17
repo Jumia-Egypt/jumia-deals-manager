@@ -314,7 +314,7 @@ module.exports = async function handler(req, res) {
   if (parts[0] === 'vendors') {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('users')
-        .select('id,name,email,role,created_at').order('created_at', { ascending: false });
+        .select('id,name,email,role,password,created_at').order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data || []);
     }
