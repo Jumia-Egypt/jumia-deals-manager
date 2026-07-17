@@ -397,6 +397,12 @@ export function VendorManagement() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [uploadMessage, setUploadMessage] = useState('');
+  const [modelsRows, setModelsRows] = useState<any[]>([]);
+  const [modelsPending, setModelsPending] = useState(false);
+  const [modelsUploading, setModelsUploading] = useState(false);
+  const [modelsUploadMsg, setModelsUploadMsg] = useState('');
+  const [modelsIsDragging, setModelsIsDragging] = useState(false);
+  const modelsFileRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleBulkImportDailyData = async (parsedDailyData: any[]) => {
@@ -509,6 +515,78 @@ export function VendorManagement() {
     };
     reader.onerror = () => { setUploadStatus('error'); setUploadMessage('Failed to read the file.'); };
     reader.readAsBinaryString(file);
+  };
+
+
+  const handleModelsFile = (file: File) => {
+    import('xlsx').then((XLSX) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array', cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw: any[] = XLSX.utils.sheet_to_json(ws, { raw: false, dateNF: 'yyyy-mm-dd' });
+        const rows = raw.map((r: any) => {
+          // Normalize headers: Date/date, Product Name/model_name, # Gross Items/gross_items, GMV, # Gross Orders
+          const keys = Object.keys(r);
+          const get = (...candidates: string[]) => {
+            for (const c of candidates) {
+              const k = keys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g,'').includes(c.toLowerCase().replace(/[^a-z0-9]/g,'')));
+              if (k !== undefined) return r[k];
+            }
+            return null;
+          };
+          const rawDate = get('date','day');
+          let date = '';
+          if (rawDate instanceof Date) {
+            date = rawDate.toISOString().slice(0, 10);
+          } else if (typeof rawDate === 'string') {
+            // handle DD/MM/YYYY or YYYY-MM-DD
+            if (rawDate.includes('/')) {
+              const [d, m, y] = rawDate.split('/');
+              date = y && m && d ? `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` : rawDate;
+            } else {
+              date = rawDate.slice(0, 10);
+            }
+          }
+          const gross_items = parseFloat(String(get('grossitems','grossitem','items') ?? '0').replace(/,/g,'')) || 0;
+          const gross_orders = parseFloat(String(get('grossorders','grossorder','orders') ?? '0').replace(/,/g,'')) || 0;
+          const gmv = parseFloat(String(get('grossmerchandise','gmv','value') ?? '0').replace(/,/g,'')) || 0;
+          return {
+            date,
+            model_name: String(get('productname','product','modelname','name') ?? ''),
+            gross_items,
+            gross_orders,
+            gmv,
+          };
+        }).filter(r => r.date && r.model_name);
+        setModelsRows(rows);
+        setModelsPending(true);
+        setModelsUploadMsg(`${rows.length} rows ready — click Upload to save`);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const handleModelsUpload = async () => {
+    if (!modelsRows.length) return;
+    setModelsUploading(true);
+    setModelsUploadMsg('Uploading…');
+    try {
+      const res = await fetch('/api/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendor_id: selectedVendorId, rows: modelsRows }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setModelsUploadMsg(`✓ ${modelsRows.length} rows saved successfully`);
+      setModelsPending(false);
+      setModelsRows([]);
+    } catch (err: any) {
+      setModelsUploadMsg('Error: ' + err.message);
+    } finally {
+      setModelsUploading(false);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -836,13 +914,28 @@ export function VendorManagement() {
 
                   {/* Box 2: Import Models & GIS */}
                   <div className="space-y-3">
-                    <div className="border-2 border-dashed rounded-2xl p-3 text-center flex flex-col items-center justify-center gap-1 min-h-[160px] border-slate-200 hover:border-orange-400 transition-colors cursor-not-allowed">
-                    <p className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-1">Import Models - GIS</p>
-                      <div className="p-2 bg-orange-50 rounded-full text-orange-500">
-                        <Upload className="w-4 h-4" />
-                      </div>
-                      <div>
-                      </div>
+                    <div
+                className={`border-2 border-dashed rounded-2xl p-3 text-center flex flex-col items-center justify-center gap-1 min-h-[160px] transition-all cursor-pointer ${modelsIsDragging ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-400'}`}
+                onClick={() => modelsFileRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setModelsIsDragging(true); }}
+                onDragLeave={() => setModelsIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setModelsIsDragging(false); const f = e.dataTransfer.files[0]; if (f) handleModelsFile(f); }}
+              >
+                <p className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-1">Import Models - GIS</p>
+                <UploadCloud className="w-8 h-8 text-slate-300 mt-1" />
+                {modelsUploadMsg && <p className="text-xs mt-1 text-slate-500">{modelsUploadMsg}</p>}
+                {modelsPending && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleModelsUpload(); }}
+                    disabled={modelsUploading}
+                    className="mt-2 px-3 py-1 rounded-lg bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    {modelsUploading ? 'Uploading…' : 'Upload'}
+                  </button>
+                )}
+                <input ref={modelsFileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleModelsFile(f); }} />
+              </div>
                     </div>
                   </div>
 
