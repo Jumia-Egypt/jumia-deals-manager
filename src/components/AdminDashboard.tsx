@@ -468,7 +468,7 @@ export function AdminDashboard() {
         <h4 className="font-bold">Rules</h4>
         <div>
           <label className="text-xs font-bold mb-2 block">Eligible Categories</label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 bg-white p-4 rounded-xl border border-slate-400 shadow-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1 bg-white p-2 rounded-xl border border-slate-400 shadow-sm">
             {Object.keys(categoryIcons).map(cat => {
               const Icon = categoryIcons[cat];
               const isChecked = formData.rules?.eligibleCategories?.includes(cat) || false;
@@ -604,7 +604,7 @@ export function AdminDashboard() {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl flex flex-col max-h-[88vh] overflow-y-auto"
+                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden"
               >
                 <div className="flex justify-between items-center p-6 border-b border-slate-100">
                   <h3 className="text-xl font-bold text-slate-900">{editingId === 'new' ? 'Add Campaign' : 'Edit Campaign'}</h3>
@@ -612,7 +612,7 @@ export function AdminDashboard() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="p-6">
+                <div className="p-4 space-y-3 flex-1 overflow-y-auto">
                   {renderFormContent()}
                 </div>
               </motion.div>
