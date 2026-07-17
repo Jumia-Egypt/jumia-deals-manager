@@ -223,7 +223,7 @@ export function VendorManagement() {
 
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
 
-  // Sync from Supabase on mount â Supabase is source of truth for who exists
+  // Sync from Supabase on mount Ã¢ÂÂ Supabase is source of truth for who exists
   useEffect(() => {
     fetch('/api/vendors')
       .then(r => r.json())
@@ -258,7 +258,7 @@ export function VendorManagement() {
       .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
         const dailyData = rows.map((r: any) => ({
-          date: r.date, // Supabase returns YYYY-MM-DD â use directly
+          date: r.date, // Supabase returns YYYY-MM-DD Ã¢ÂÂ use directly
           gmv: Number(r.gmv),
           orders: Number(r.gross_orders),
           items: Number(r.gross_items),
@@ -328,7 +328,7 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (selectedVendor?.dailyData?.length > 0) {
       try {
-        // Dates are already YYYY-MM-DD â use directly
+        // Dates are already YYYY-MM-DD Ã¢ÂÂ use directly
         const rows = selectedVendor.dailyData
           .map((r: any) => ({
             date: r.date,
@@ -403,7 +403,7 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (!selectedVendor || parsedDailyData.length === 0) return;
 
-    // date is already YYYY-MM-DD â no conversion needed
+    // date is already YYYY-MM-DD Ã¢ÂÂ no conversion needed
     const totalGmv    = parsedDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
     const totalOrders = parsedDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
     const totalItems  = parsedDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
@@ -443,7 +443,7 @@ export function VendorManagement() {
 
     // Use SheetJS for ALL file types (xlsx, xls, csv, tsv, ods, txt).
     // This correctly handles CSV numbers with thousand-separators like "213,908"
-    // because SheetJS treats them as quoted fields â the naive comma-split breaks them.
+    // because SheetJS treats them as quoted fields Ã¢ÂÂ the naive comma-split breaks them.
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
@@ -451,7 +451,7 @@ export function VendorManagement() {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rawRows: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-        // Convert any date representation â ISO string YYYY-MM-DD
+        // Convert any date representation Ã¢ÂÂ ISO string YYYY-MM-DD
         const resolveDate = (val: any): string | null => {
           let d: Date | null = null;
           if (val instanceof Date && !isNaN(val.getTime())) {
@@ -485,7 +485,7 @@ export function VendorManagement() {
           const isoDate = resolveDate(dateVal);
           if (!isoDate) continue;
 
-          // Strip commas from numbers (handles "213,908" â 213908)
+          // Strip commas from numbers (handles "213,908" Ã¢ÂÂ 213908)
           const gmv    = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
           const orders = parseInt(String(ordVal).replace(/,/g, ''), 10) || 0;
           const items  = parseInt(String(itmVal).replace(/,/g, ''), 10) || 0;
@@ -732,28 +732,6 @@ export function VendorManagement() {
                 </span>
               </div>
 
-              {/* ── Import Models and GIS ── */}
-              <div className="border-t border-slate-100 pt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-orange-500" />
-                    Import Models &amp; GIS
-                  </h3>
-                </div>
-
-                <div
-                  className="border-2 border-dashed rounded-2xl p-3 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-h-[90px] border-slate-200 hover:border-orange-400 hover:bg-slate-50/50 opacity-60 cursor-not-allowed"
-                >
-                  <div className="p-2 bg-orange-50 rounded-full text-orange-500">
-                    <Upload className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700">Drop file or click to upload</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Coming soon</p>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -794,13 +772,16 @@ export function VendorManagement() {
               </div>
 
               {/* Right free space - Bulk File Upload Dropzone */}
-              <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-orange-500" />
-                    Import GMV - GIS - Gross Orders
-                  </h3>
-                </div>
+              <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8">
+                <div className="grid grid-cols-2 gap-4">
+
+                  {/* Box 1: Import GMV */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-orange-500" />
+                      Import GMV - GIS - Gross Orders
+                    </h3>
+
 
                 <div
                   onDragOver={handleDragOver}
@@ -858,6 +839,26 @@ export function VendorManagement() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+                                </div>
+
+                  {/* Box 2: Import Models & GIS */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-orange-500" />
+                      Import Models &amp; GIS
+                    </h3>
+                    <div className="border-2 border-dashed rounded-2xl p-3 text-center flex flex-col items-center justify-center gap-1 min-h-[90px] border-slate-200 opacity-50 cursor-not-allowed">
+                      <div className="p-2 bg-orange-50 rounded-full text-orange-500">
+                        <Upload className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-700">Drop file or click to upload</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Coming soon</p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
           </div>
@@ -1149,7 +1150,7 @@ export function VendorManagement() {
                   <input
                     type="password"
                     required
-                    placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"
+                    placeholder="Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢"
                     value={newVendorPassword}
                     onChange={(e) => setNewVendorPassword(e.target.value)}
                     className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
@@ -1267,7 +1268,7 @@ export function VendorManagement() {
                         <div className="flex items-center gap-1.5 font-medium">
                           <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                            {isPassVisible ? (vendor.password || 'password123') : 'â¢â¢â¢â¢â¢â¢â¢â¢'}
+                            {isPassVisible ? (vendor.password || 'password123') : 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢'}
                           </span>
                           <button
                             type="button"
@@ -1353,7 +1354,7 @@ export function VendorManagement() {
                           <div className="flex items-center gap-1.5 font-medium">
                             <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                              {isPassVisible ? (vendor.password || 'â¢â¢â¢â¢â¢â¢â¢â¢') : 'â¢â¢â¢â¢â¢â¢â¢â¢'}
+                              {isPassVisible ? (vendor.password || 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢') : 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢'}
                             </span>
                             <button type="button" onClick={(e) => togglePasswordVisibility(vendor.id, e)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors">
                               {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
