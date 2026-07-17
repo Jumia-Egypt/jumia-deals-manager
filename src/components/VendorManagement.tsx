@@ -3,7 +3,6 @@ import { Target, TrendingUp, ShoppingCart, Package, ChevronLeft, Plus, Save, Cal
 import clsx from 'clsx';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
-import * as XLSX from 'xlsx';
 
 interface DailyDatePickerProps {
   value: string;
