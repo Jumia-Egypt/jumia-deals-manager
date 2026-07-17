@@ -789,7 +789,7 @@ export function VendorManagement() {
                       : "border-slate-200 hover:border-orange-400 hover:bg-slate-50/50"
                   )}
                 >
-                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide mb-1">Import GMV - GIS - Gross Orders</p>
+                  <p className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-1">Import GMV - GIS - Gross Orders</p>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -837,7 +837,7 @@ export function VendorManagement() {
                   {/* Box 2: Import Models & GIS */}
                   <div className="space-y-3">
                     <div className="border-2 border-dashed rounded-2xl p-3 text-center flex flex-col items-center justify-center gap-1 min-h-[160px] border-slate-200 hover:border-orange-400 transition-colors cursor-not-allowed">
-                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide mb-1">Import Models - GIS</p>
+                    <p className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-1">Import Models - GIS</p>
                       <div className="p-2 bg-orange-50 rounded-full text-orange-500">
                         <Upload className="w-4 h-4" />
                       </div>
