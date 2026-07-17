@@ -53,10 +53,10 @@ function CustomDropdown({
     
   // Lock body scroll when any modal is open
   useEffect(() => {
-    const isModalOpen = showCampaignModal || showDeleteModal;
+    const isModalOpen = !!editingId || !!deleteConfirmId;
     document.body.style.overflow = isModalOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [showCampaignModal, showDeleteModal]);
+  }, [editingId, deleteConfirmId]);
 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
