@@ -50,6 +50,14 @@ function CustomDropdown({
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
+    
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    const isModalOpen = showCampaignModal || showDeleteModal;
+    document.body.style.overflow = isModalOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showCampaignModal, showDeleteModal]);
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
@@ -591,12 +599,12 @@ export function AdminDashboard() {
         {/* Create/Edit Modal */}
         <AnimatePresence>
           {editingId && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-hidden">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-4xl flex flex-col my-8"
+                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl flex flex-col max-h-[88vh] overflow-y-auto"
               >
                 <div className="flex justify-between items-center p-6 border-b border-slate-100">
                   <h3 className="text-xl font-bold text-slate-900">{editingId === 'new' ? 'Add Campaign' : 'Edit Campaign'}</h3>
