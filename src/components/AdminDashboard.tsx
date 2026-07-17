@@ -598,7 +598,7 @@ export function AdminDashboard() {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden"
+                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl flex flex-col max-h-[95vh] overflow-hidden"
               >
                 <div className="flex justify-between items-center p-6 border-b border-slate-100">
                   <h3 className="text-xl font-bold text-slate-900">{editingId === 'new' ? 'Add Campaign' : 'Edit Campaign'}</h3>
@@ -606,7 +606,7 @@ export function AdminDashboard() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="p-4 space-y-3 flex-1 overflow-y-auto modal-scroll">
+                <div className="p-3 space-y-2 flex-1 overflow-y-auto modal-scroll">
                   {renderFormContent()}
                 </div>
               </motion.div>
