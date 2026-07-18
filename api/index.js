@@ -1,4 +1,4 @@
-'use strict'; // deploy-1784331131207
+'use strict';
 const { createClient } = require('@supabase/supabase-js');
 const { randomUUID } = require('crypto');
 
@@ -13,6 +13,7 @@ function cors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
+// Parse URL path into parts array, stripping /api/ prefix
 function parsePath(url) {
   const path = (url || '').split('?')[0];
   const stripped = path.replace(/^\/api\/?/, '');
@@ -45,6 +46,7 @@ module.exports = async function handler(req, res) {
   const q = req.query || {};
   const body = req.body || {};
 
+  // ── POST /api/auth/login ──────────────────────────────────────────────────
   if (parts[0] === 'auth' && parts[1] === 'login') {
     const { email, password } = body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -57,6 +59,7 @@ module.exports = async function handler(req, res) {
     return res.json({ id: data.id, name: data.name, email: data.email, role: data.role.toLowerCase(), vendorId: data.id });
   }
 
+  // ── /api/campaigns ────────────────────────────────────────────────────────
   if (parts[0] === 'campaigns' && !parts[1]) {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('campaigns_v2').select('*').order('created_at', { ascending: false });
@@ -76,6 +79,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── /api/campaigns/:id ────────────────────────────────────────────────────
   if (parts[0] === 'campaigns' && parts[1] && !parts[2]) {
     const id = parts[1];
     if (req.method === 'GET') {
@@ -101,12 +105,13 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── /api/performance ──────────────────────────────────────────────────────
   if (parts[0] === 'performance' && !parts[1]) {
     if (req.method === 'GET') {
       const { vendor_id } = q;
       if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
       const { data, error } = await supabase.from('vendor_performance')
-        .select('date,gmv,gross_orders,gross_items')
+        .select('date,gmv,gross_orders,gross_items,models_data')
         .eq('vendor_id', vendor_id).order('date', { ascending: true });
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data || []);
@@ -120,6 +125,7 @@ module.exports = async function handler(req, res) {
         gmv: parseFloat(r.gmv) || 0,
         gross_orders: parseInt(r.gross_orders) || 0,
         gross_items: parseInt(r.gross_items) || 0,
+        models_data: Array.isArray(r.models_data) ? r.models_data : [],
       })).filter(r => r.date);
       if (records.length === 0) return res.status(400).json({ error: 'No valid rows after filtering' });
       const { error } = await supabase.from('vendor_performance').upsert(records, { onConflict: 'vendor_id,date' });
@@ -135,6 +141,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── /api/products (no SKU) — list / save / delete by vendor_id ───────────
   if (parts[0] === 'products' && !parts[1]) {
     if (req.method === 'GET') {
       const { vendor_id } = q;
@@ -184,6 +191,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── GET /api/products/:sku ────────────────────────────────────────────────
   if (parts[0] === 'products' && parts[1] && !parts[2]) {
     const sku = decodeURIComponent(parts[1]);
     const { data, error } = await supabase.from('products')
@@ -197,6 +205,7 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // ── PUT /api/submissions/:id/products/:sku/status ─────────────────────────
   if (parts[0] === 'submissions' && parts[1] && parts[2] === 'products' && parts[3] && parts[4] === 'status') {
     const id = parts[1], sku = decodeURIComponent(parts[3]);
     if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
@@ -218,6 +227,7 @@ module.exports = async function handler(req, res) {
     return res.json({ success: true, submission: mapSubmission(data) });
   }
 
+  // ── PUT /api/submissions/:id/status ───────────────────────────────────────
   if (parts[0] === 'submissions' && parts[1] && parts[2] === 'status' && !parts[3]) {
     const id = parts[1];
     if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
@@ -231,6 +241,7 @@ module.exports = async function handler(req, res) {
     return res.json({ success: true, submission: mapSubmission(data) });
   }
 
+  // ── GET/DELETE /api/submissions/:id ───────────────────────────────────────
   if (parts[0] === 'submissions' && parts[1] && !parts[2]) {
     const id = parts[1];
     if (req.method === 'GET') {
@@ -245,6 +256,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── /api/submissions ──────────────────────────────────────────────────────
   if (parts[0] === 'submissions' && !parts[1]) {
     if (req.method === 'GET') {
       let query = supabase.from('submissions_v2').select('*').order('submitted_at', { ascending: false });
@@ -279,6 +291,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── POST /api/validate-price ──────────────────────────────────────────────
   if (parts[0] === 'validate-price') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
     const { sku, newPrice, newStock, campaignId } = body;
@@ -311,10 +324,11 @@ module.exports = async function handler(req, res) {
     return res.json({ valid: true, discountPercent: finalDiscount.toFixed(2), savings: (product.priceBeforeDiscount - price).toFixed(2), message: 'Valid campaign price. Ready for submission.' });
   }
 
+  // ── /api/vendors ─────────────────────────────────────────────────────────
   if (parts[0] === 'vendors') {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('users')
-        .select('id,name,email,role,password,created_at').order('created_at', { ascending: false });
+        .select('id,name,email,role,created_at').order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data || []);
     }
@@ -351,37 +365,40 @@ module.exports = async function handler(req, res) {
   }
 
 
-  // ── /api/models ──
-  if (parts[0] === 'models' && !parts[1]) {
+  // ── /api/models ───────────────────────────────────────────────────────────
+  // GET  /api/models?vendor_id=xxx  → rows from vendor_models_gis
+  // POST /api/models                → upsert { vendor_id, rows: [{date,model_name,gmv,gross_orders,gross_items}] }
+  if (parts[0] === 'models') {
     if (req.method === 'GET') {
       const { vendor_id } = q;
       if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
       const { data, error } = await supabase
         .from('vendor_models_gis')
-        .select('*')
+        .select('date,model_name,gmv,gross_orders,gross_items')
         .eq('vendor_id', vendor_id)
         .order('date', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
-      return res.json(data);
+      return res.json(data || []);
     }
-
     if (req.method === 'POST') {
       const { vendor_id, rows } = body;
-      if (!vendor_id || !rows?.length) return res.status(400).json({ error: 'vendor_id and rows required' });
+      if (!vendor_id || !Array.isArray(rows) || rows.length === 0)
+        return res.status(400).json({ error: 'vendor_id and rows[] required' });
       const records = rows.map(r => ({
         vendor_id,
-        date: r.date,
-        model_name: r.model_name,
-        gmv: r.gmv || 0,
-        gross_orders: r.gross_orders || 0,
-        gross_items: r.gross_items || 0,
-      }));
+        date:         r.date,
+        model_name:   String(r.model_name || '').trim(),
+        gmv:          parseFloat(r.gmv) || 0,
+        gross_orders: parseInt(r.gross_orders, 10) || 0,
+        gross_items:  parseInt(r.gross_items, 10) || 0,
+      })).filter(r => r.date && r.model_name);
       const { error } = await supabase
         .from('vendor_models_gis')
         .upsert(records, { onConflict: 'vendor_id,date,model_name' });
       if (error) return res.status(500).json({ error: error.message });
-      return res.json({ success: true, count: records.length });
+      return res.json({ inserted: records.length });
     }
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   return res.status(404).json({ error: 'Not found', path: req.url });
