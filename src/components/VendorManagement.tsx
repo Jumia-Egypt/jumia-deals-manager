@@ -222,7 +222,7 @@ export function VendorManagement() {
 
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
 
-  // Sync from Supabase on mount ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Supabase is source of truth for who exists
+  // Sync from Supabase on mount — Supabase is source of truth for who exists
   useEffect(() => {
     fetch('/api/vendors')
       .then(r => r.json())
@@ -257,7 +257,7 @@ export function VendorManagement() {
       .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
         const dailyData = rows.map((r: any) => ({
-          date: r.date, // Supabase returns YYYY-MM-DD ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ use directly
+          date: r.date, // Supabase returns YYYY-MM-DD — use directly
           gmv: Number(r.gmv),
           orders: Number(r.gross_orders),
           items: Number(r.gross_items),
@@ -327,7 +327,7 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (selectedVendor?.dailyData?.length > 0) {
       try {
-        // Dates are already YYYY-MM-DD ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ use directly
+        // Dates are already YYYY-MM-DD — use directly
         const rows = selectedVendor.dailyData
           .map((r: any) => ({
             date: r.date,
@@ -396,26 +396,56 @@ export function VendorManagement() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [uploadMessage, setUploadMessage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Models & GIS upload states
   const [modelsRows, setModelsRows] = useState<any[]>([]);
   const [modelsPending, setModelsPending] = useState(false);
   const [modelsUploading, setModelsUploading] = useState(false);
   const [modelsUploadMsg, setModelsUploadMsg] = useState('');
   const [modelsIsDragging, setModelsIsDragging] = useState(false);
   const modelsFileRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleBulkImportDailyData = async (parsedDailyData: any[]) => {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (!selectedVendor || parsedDailyData.length === 0) return;
 
-    // date is already YYYY-MM-DD ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ no conversion needed
-    const totalGmv    = parsedDailyData.reduce((acc, curr) => acc + Number(curr.gmv || 0), 0);
-    const totalOrders = parsedDailyData.reduce((acc, curr) => acc + Number(curr.orders || 0), 0);
-    const totalItems  = parsedDailyData.reduce((acc, curr) => acc + Number(curr.items || 0), 0);
+    // Group raw rows by date (Excel may have multiple product rows per date)
+    const byDate = new Map<string, { gmv: number; orders: number; items: number; models: Map<string, { gmv: number; orders: number; items: number }> }>();
+    for (const r of parsedDailyData) {
+      if (!byDate.has(r.date)) {
+        byDate.set(r.date, { gmv: 0, orders: 0, items: 0, models: new Map() });
+      }
+      const day = byDate.get(r.date)!;
+      day.gmv    += Number(r.gmv    || 0);
+      day.orders += Number(r.orders || 0);
+      day.items  += Number(r.items  || 0);
+      if (r.modelName) {
+        const existing = day.models.get(r.modelName) || { gmv: 0, orders: 0, items: 0 };
+        existing.gmv    += Number(r.gmv    || 0);
+        existing.orders += Number(r.orders || 0);
+        existing.items  += Number(r.items  || 0);
+        day.models.set(r.modelName, existing);
+      }
+    }
+
+    // Build grouped array sorted by date
+    const grouped: any[] = [];
+    byDate.forEach((val, date) => {
+      const models_data = Array.from(val.models.entries()).map(([name, d]) => ({
+        name, gmv: d.gmv, orders: d.orders, items: d.items,
+      }));
+      grouped.push({ date, gmv: val.gmv, orders: val.orders, items: val.items, models_data });
+    });
+    grouped.sort((a, b) => a.date.localeCompare(b.date));
+
+    const totalGmv    = grouped.reduce((acc, curr) => acc + curr.gmv, 0);
+    const totalOrders = grouped.reduce((acc, curr) => acc + curr.orders, 0);
+    const totalItems  = grouped.reduce((acc, curr) => acc + curr.items, 0);
 
     handleUpdateVendor({
       ...selectedVendor,
-      dailyData: parsedDailyData,
+      dailyData: grouped,
       achievementGMV: totalGmv,
       countOfOrders: totalOrders,
       grossItemSold: totalItems
@@ -423,12 +453,13 @@ export function VendorManagement() {
 
     // Persist to Supabase via API
     try {
-      const apiRows = parsedDailyData
+      const apiRows = grouped
         .map(r => ({
           date: r.date,
           gmv: Number(r.gmv || 0),
           gross_orders: Number(r.orders || 0),
           gross_items: Number(r.items || 0),
+          models_data: r.models_data || [],
         }))
         .filter(r => r.date);
 
@@ -448,15 +479,16 @@ export function VendorManagement() {
 
     // Use SheetJS for ALL file types (xlsx, xls, csv, tsv, ods, txt).
     // This correctly handles CSV numbers with thousand-separators like "213,908"
-    // because SheetJS treats them as quoted fields ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ the naive comma-split breaks them.
+    // because SheetJS treats them as quoted fields — the naive comma-split breaks them.
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
-        const wb = XLSX.read(ev.target?.result, { type: 'binary' });
+        const XLSX = await import('xlsx');
+        const wb = (XLSX as any).read(ev.target?.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rawRows: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const rawRows: Record<string, any>[] = (XLSX as any).utils.sheet_to_json(ws, { defval: '' });
 
-        // Convert any date representation ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ ISO string YYYY-MM-DD
+        // Convert any date representation → ISO string YYYY-MM-DD
         const resolveDate = (val: any): string | null => {
           let d: Date | null = null;
           if (val instanceof Date && !isNaN(val.getTime())) {
@@ -479,6 +511,7 @@ export function VendorManagement() {
           const gmvVal  = row['Gross Merchandise Value'] ?? row['GMV'] ?? row['gmv'] ?? row['achievedGMV'] ?? 0;
           const ordVal  = row['# Gross Orders']  ?? row['Gross Orders']  ?? row['Orders']  ?? row['orders']  ?? 0;
           const itmVal  = row['# Gross Items']   ?? row['Gross Items']   ?? row['Items']   ?? row['items']   ?? 0;
+          const modelVal = String(row['Product Name'] ?? row['Model Name'] ?? row['product_name'] ?? row['model_name'] ?? '').trim();
 
           // Skip blank / Total / NaN / filter rows
           if (dateVal === '' || dateVal == null) continue;
@@ -490,12 +523,12 @@ export function VendorManagement() {
           const isoDate = resolveDate(dateVal);
           if (!isoDate) continue;
 
-          // Strip commas from numbers (handles "213,908" ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ 213908)
+          // Strip commas from numbers (handles "213,908" → 213908)
           const gmv    = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
           const orders = parseInt(String(ordVal).replace(/,/g, ''), 10) || 0;
           const items  = parseInt(String(itmVal).replace(/,/g, ''), 10) || 0;
 
-          parsed.push({ date: isoDate, gmv, orders, items });
+          parsed.push({ date: isoDate, gmv, orders, items, modelName: modelVal });
         }
 
         if (parsed.length === 0) {
@@ -505,8 +538,10 @@ export function VendorManagement() {
         }
 
         await handleBulkImportDailyData(parsed);
+        // Count unique dates for the success message
+        const uniqueDates = new Set(parsed.map((r: any) => r.date)).size;
         setUploadStatus('success');
-        setUploadMessage(`Successfully imported ${parsed.length} day${parsed.length !== 1 ? 's' : ''}!`);
+        setUploadMessage(`Successfully imported ${uniqueDates} day${uniqueDates !== 1 ? 's' : ''} (${parsed.length} product rows)!`);
       } catch (err: any) {
         setUploadStatus('error');
         setUploadMessage(`Parsing error: ${err.message || 'Unknown error'}`);
@@ -516,61 +551,54 @@ export function VendorManagement() {
     reader.readAsBinaryString(file);
   };
 
-
   const handleModelsFile = (file: File) => {
-    import('xlsx').then((XLSX) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const wb = XLSX.read(data, { type: 'array', cellDates: true });
+    setModelsUploadMsg('');
+    setModelsPending(false);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const XLSX = await import('xlsx');
+        const wb = (XLSX as any).read(ev.target?.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: any[] = XLSX.utils.sheet_to_json(ws, { raw: false, dateNF: 'yyyy-mm-dd' });
-        const rows = raw.map((r: any) => {
-          // Normalize headers: Date/date, Product Name/model_name, # Gross Items/gross_items, GMV, # Gross Orders
-          const keys = Object.keys(r);
-          const get = (...candidates: string[]) => {
-            for (const c of candidates) {
-              const k = keys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g,'').includes(c.toLowerCase().replace(/[^a-z0-9]/g,'')));
-              if (k !== undefined) return r[k];
-            }
-            return null;
-          };
-          const rawDate = get('date','day');
-          let date = '';
-          if (rawDate instanceof Date) {
-            date = rawDate.toISOString().slice(0, 10);
-          } else if (typeof rawDate === 'string') {
-            // handle DD/MM/YYYY or YYYY-MM-DD
-            if (rawDate.includes('/')) {
-              const [d, m, y] = rawDate.split('/');
-              date = y && m && d ? `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` : rawDate;
-            } else {
-              date = rawDate.slice(0, 10);
-            }
+        const rawRows: Record<string, any>[] = (XLSX as any).utils.sheet_to_json(ws, { defval: '' });
+        const parsed: any[] = [];
+        for (const row of rawRows) {
+          const dateVal  = row['Date'] ?? row['date'] ?? row['DATE'] ?? '';
+          const modelVal = String(row['Product Name'] ?? row['Model Name'] ?? row['model_name'] ?? '').trim();
+          const gmvVal   = row['Gross Merchandise Value'] ?? row['GMV'] ?? row['gmv'] ?? 0;
+          const ordVal   = row['# Gross Orders'] ?? row['Gross Orders'] ?? row['orders'] ?? 0;
+          const itmVal   = row['# Gross Items']  ?? row['Gross Items']  ?? row['items']  ?? 0;
+          if (!dateVal || !modelVal) continue;
+          let d: string | null = null;
+          if (typeof dateVal === 'number' && dateVal > 40000 && dateVal < 60000) {
+            d = new Date(Math.round((dateVal - 25569) * 86400 * 1000)).toISOString().split('T')[0];
+          } else {
+            const p2 = new Date(String(dateVal).trim());
+            if (!isNaN(p2.getTime())) d = p2.toISOString().split('T')[0];
           }
-          const gross_items = parseFloat(String(get('grossitems','grossitem','items') ?? '0').replace(/,/g,'')) || 0;
-          const gross_orders = parseFloat(String(get('grossorders','grossorder','orders') ?? '0').replace(/,/g,'')) || 0;
-          const gmv = parseFloat(String(get('grossmerchandise','gmv','value') ?? '0').replace(/,/g,'')) || 0;
-          return {
-            date,
-            model_name: String(get('productname','product','modelname','name') ?? ''),
-            gross_items,
-            gross_orders,
-            gmv,
-          };
-        }).filter(r => r.date && r.model_name);
-        setModelsRows(rows);
+          if (!d) continue;
+          parsed.push({
+            date: d,
+            model_name: modelVal,
+            gmv:          parseFloat(String(gmvVal).replace(/,/g, '')) || 0,
+            gross_orders: parseInt(String(ordVal).replace(/,/g, ''), 10) || 0,
+            gross_items:  parseInt(String(itmVal).replace(/,/g, ''), 10) || 0,
+          });
+        }
+        setModelsRows(parsed);
         setModelsPending(true);
-        setModelsUploadMsg(`${rows.length} rows ready — click Upload to save`);
-      };
-      reader.readAsArrayBuffer(file);
-    });
+        if (parsed.length === 0) setModelsUploadMsg('No valid rows found. Expected: Date, Product/Model Name, GMV, Orders, Items.');
+      } catch (err: any) {
+        setModelsUploadMsg('Parse error: ' + (err.message || 'Unknown error'));
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   const handleModelsUpload = async () => {
-    if (!modelsRows.length) return;
+    if (modelsRows.length === 0) return;
     setModelsUploading(true);
-    setModelsUploadMsg('Uploading…');
+    setModelsUploadMsg('Uploading...');
     try {
       const res = await fetch('/api/models', {
         method: 'POST',
@@ -578,11 +606,11 @@ export function VendorManagement() {
         body: JSON.stringify({ vendor_id: selectedVendorId, rows: modelsRows }),
       });
       if (!res.ok) throw new Error(await res.text());
-      setModelsUploadMsg(`✓ ${modelsRows.length} rows saved successfully`);
+      setModelsUploadMsg('\u2713 ' + modelsRows.length + ' rows uploaded!');
       setModelsPending(false);
       setModelsRows([]);
     } catch (err: any) {
-      setModelsUploadMsg('Error: ' + err.message);
+      setModelsUploadMsg('Error: ' + (err.message || 'Upload failed'));
     } finally {
       setModelsUploading(false);
     }
@@ -808,7 +836,6 @@ export function VendorManagement() {
                     : '0%'}
                 </span>
               </div>
-
             </div>
           </div>
 
@@ -849,24 +876,26 @@ export function VendorManagement() {
               </div>
 
               {/* Right free space - Bulk File Upload Dropzone */}
-              <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-orange-500" />
+                    Bulk Import Daily Data
+                  </h3>
+                </div>
 
-                  {/* Box 1: Import GMV */}
-                  <div className="space-y-3">
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
                   className={clsx(
-                    "border-2 border-dashed rounded-2xl p-3 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-h-[160px] hover:border-orange-400",
+                    "border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]",
                     isDragging
                       ? "border-orange-500 bg-orange-50/50 animate-pulse"
                       : "border-slate-200 hover:border-orange-400 hover:bg-slate-50/50"
                   )}
                 >
-                  <p className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-1">Import GMV - GIS - Gross Orders</p>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -874,10 +903,12 @@ export function VendorManagement() {
                     accept=".xlsx,.xls,.csv,.tsv,.ods,.txt"
                     className="hidden"
                   />
-                  <div className="p-2 bg-orange-50 rounded-full text-orange-500">
-                    <Upload className="w-4 h-4" />
+                  <div className="p-3 bg-orange-50 rounded-full text-orange-500">
+                    <Upload className="w-5 h-5" />
                   </div>
                   <div>
+                    <p className="text-sm font-bold text-slate-700">Drag & drop your report file here</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, TSV or any spreadsheet format (.xlsx, .csv, .tsv, .ods)</p>
                   </div>
                 </div>
 
@@ -909,38 +940,62 @@ export function VendorManagement() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-                                </div>
-
-                  {/* Box 2: Import Models & GIS */}
-                  <div className="space-y-3">
-                    <div
-                className={`border-2 border-dashed rounded-2xl p-3 text-center flex flex-col items-center justify-center gap-1 min-h-[160px] transition-all cursor-pointer ${modelsIsDragging ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-400'}`}
-                onClick={() => modelsFileRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setModelsIsDragging(true); }}
-                onDragLeave={() => setModelsIsDragging(false)}
-                onDrop={(e) => { e.preventDefault(); setModelsIsDragging(false); const f = e.dataTransfer.files[0]; if (f) handleModelsFile(f); }}
-              >
-                <p className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-1">Import Models - GIS</p>
-                <UploadCloud className="w-8 h-8 text-slate-300 mt-1" />
-                {modelsUploadMsg && <p className="text-xs mt-1 text-slate-500">{modelsUploadMsg}</p>}
-                {modelsPending && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleModelsUpload(); }}
-                    disabled={modelsUploading}
-                    className="mt-2 px-3 py-1 rounded-lg bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 disabled:opacity-50"
-                  >
-                    {modelsUploading ? 'Uploading…' : 'Upload'}
-                  </button>
-                )}
-                <input ref={modelsFileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleModelsFile(f); }} />
-              </div>
-                    </div>
-                  </div>
-
-                </div>
               </div>
             </div>
+          </div>
+
+          {/* Box 2: Import Models & GIS */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-orange-500" />
+              Import Models &amp; GIS Data
+            </h3>
+            <div
+              className={modelsIsDragging ? 'border-2 border-dashed rounded-xl p-8 text-center transition-colors border-orange-400 bg-orange-50' : 'border-2 border-dashed rounded-xl p-8 text-center transition-colors border-slate-300 hover:border-orange-300'}
+              onDragOver={(e) => { e.preventDefault(); setModelsIsDragging(true); }}
+              onDragLeave={() => setModelsIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setModelsIsDragging(false);
+                const f = e.dataTransfer.files[0];
+                if (f) handleModelsFile(f);
+              }}
+              onClick={() => modelsFileRef.current?.click()}
+              style={{ cursor: 'pointer' }}
+            >
+              <input
+                ref={modelsFileRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleModelsFile(f);
+                }}
+              />
+              <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+              <p className="text-sm font-medium text-slate-600">Drop your Models &amp; GIS file here</p>
+              <p className="text-xs text-slate-400 mt-1">Supports .xlsx, .xls, .csv</p>
+            </div>
+            {modelsRows.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm text-slate-600 mb-3">
+                  {modelsRows.length} {modelsRows.length !== 1 ? 'rows' : 'row'} ready to upload
+                </p>
+                <button
+                  onClick={handleModelsUpload}
+                  disabled={modelsUploading}
+                  className="w-full py-2.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  {modelsUploading ? 'Uploading...' : 'Upload Models Data'}
+                </button>
+              </div>
+            )}
+            {modelsUploadMsg && (
+              <p className={modelsUploadMsg.startsWith('Error') ? 'mt-3 text-sm text-center text-red-500' : 'mt-3 text-sm text-center text-green-600'}>
+                {modelsUploadMsg}
+              </p>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden">
@@ -1230,7 +1285,7 @@ export function VendorManagement() {
                   <input
                     type="password"
                     required
-                    placeholder="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¢"
+                    placeholder="••••••••"
                     value={newVendorPassword}
                     onChange={(e) => setNewVendorPassword(e.target.value)}
                     className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
@@ -1348,7 +1403,7 @@ export function VendorManagement() {
                         <div className="flex items-center gap-1.5 font-medium">
                           <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                            {isPassVisible ? (vendor.password || '••••••••') : '••••••••'}
+                            {isPassVisible ? (vendor.password || 'password123') : '••••••••'}
                           </span>
                           <button
                             type="button"
