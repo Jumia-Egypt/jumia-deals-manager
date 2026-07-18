@@ -3,7 +3,7 @@ import { UploadCloud, Save, Search, ChevronDown, Check, Users, Trash2, RefreshCw
 import * as XLSX from 'xlsx';
 
 
-/* ── Confirm Modal ───────────────────────────── */
+/* ââ Confirm Modal âââââââââââââââââââââââââââââ */
 interface ConfirmModalProps {
   vendorName: string;
   skuCount: number;
@@ -48,7 +48,7 @@ function ConfirmModal({ vendorName, skuCount, onConfirm, onCancel }: ConfirmModa
   );
 }
 
-/* ── Dropdown ────────────────────────────────── */
+/* ââ Dropdown ââââââââââââââââââââââââââââââââââ */
 interface DropdownProps {
   value: string;
   onChange: (val: string) => void;
@@ -93,41 +93,30 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
   );
 }
 
-function Loader() {
+function DotSpinner() {
   return (
     <>
-      <style>{'.jumia-loader{--dim:2.2rem;background-color:#f97316;opacity:0.55;width:var(--dim);height:var(--dim);border-radius:50%;display:grid;place-items:center;animation:spin_412 5s infinite;} .jumia-loader svg{transform:translateY(-1px) scale(.65);} @keyframes spin_412{0%{transform:rotate(0) scale(1);}50%{transform:rotate(720deg) scale(1.2);}100%{transform:rotate(0) scale(1);}}'}</style>
-      <div className="jumia-loader">
-        <svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg">
-          <path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/>
-        </svg>
-      {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Clear All SKUs?</h3>
-            <p className="text-sm text-slate-500 mb-6">This will permanently remove all SKUs for this vendor. This action cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowClearConfirm(false)} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={() => { setShowClearConfirm(false); handleClear(); }} className="flex-1 px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors">
-                Clear All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <style>{`
+        .dot-spinner{--uib-size:2.8rem;--uib-speed:.9s;--uib-color:#f97316;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size)}
+        .dot-spinner__dot{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:flex-start;height:100%;width:100%}
+        .dot-spinner__dot::before{content:'';height:20%;width:20%;border-radius:50%;background-color:var(--uib-color);transform:scale(0);opacity:.5;animation:pulse0112 calc(var(--uib-speed) * 1.111) ease-in-out infinite;box-shadow:0 0 20px rgba(249,115,22,.3)}
+        .dot-spinner__dot:nth-child(2){transform:rotate(45deg)}.dot-spinner__dot:nth-child(2)::before{animation-delay:calc(var(--uib-speed) * -0.875)}
+        .dot-spinner__dot:nth-child(3){transform:rotate(90deg)}.dot-spinner__dot:nth-child(3)::before{animation-delay:calc(var(--uib-speed) * -0.75)}
+        .dot-spinner__dot:nth-child(4){transform:rotate(135deg)}.dot-spinner__dot:nth-child(4)::before{animation-delay:calc(var(--uib-speed) * -0.625)}
+        .dot-spinner__dot:nth-child(5){transform:rotate(180deg)}.dot-spinner__dot:nth-child(5)::before{animation-delay:calc(var(--uib-speed) * -0.5)}
+        .dot-spinner__dot:nth-child(6){transform:rotate(225deg)}.dot-spinner__dot:nth-child(6)::before{animation-delay:calc(var(--uib-speed) * -0.375)}
+        .dot-spinner__dot:nth-child(7){transform:rotate(270deg)}.dot-spinner__dot:nth-child(7)::before{animation-delay:calc(var(--uib-speed) * -0.25)}
+        .dot-spinner__dot:nth-child(8){transform:rotate(315deg)}.dot-spinner__dot:nth-child(8)::before{animation-delay:calc(var(--uib-speed) * -0.125)}
+        @keyframes pulse0112{0%,100%{transform:scale(0);opacity:.5}50%{transform:scale(1);opacity:1}}
+      `}</style>
+      <div className="dot-spinner">
+        {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="dot-spinner__dot" />)}
       </div>
     </>
   );
 }
 
-/* ── Types ───────────────────────────────────── */
+/* ââ Types âââââââââââââââââââââââââââââââââââââ */
 interface ParsedRow { sku: string; supplier_sku: string; brand: string; model_name: string; price_before: number; price_after: number; live_stock: number; }
 interface Vendor { id: string; name: string; email: string; role: string; }
 
@@ -141,7 +130,7 @@ const COL_MAP: Record<string, string> = {
   availablestock:'live_stock', livestock:'live_stock', stock:'live_stock', qty:'live_stock', quantity:'live_stock', availqty:'live_stock',
 };
 
-/* ── Main Component ──────────────────────────── */
+/* ââ Main Component ââââââââââââââââââââââââââââ */
 export default function VendorSkus() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
@@ -241,7 +230,7 @@ export default function VendorSkus() {
     return mb && ms;
   });
 
-  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : '—';
+  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : 'â';
   const stockBadge = (qty: number) => {
     if (!qty && qty !== 0) return 'bg-slate-100 text-slate-600 border-slate-200';
     if (qty > 50) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -297,7 +286,7 @@ export default function VendorSkus() {
               <button type="button" onClick={handleSave} disabled={saving}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
                 <Save className="w-4 h-4" />
-                {saving ? 'Saving…' : `Save ${rows.length} products`}
+                {saving ? 'Savingâ¦' : `Save ${rows.length} products`}
               </button>
             )}
 
@@ -305,7 +294,7 @@ export default function VendorSkus() {
               <button type="button" onClick={() => setShowClearConfirm(true)} disabled={clearing}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed ml-auto">
                 <Trash2 className="w-3.5 h-3.5" />
-                {clearing ? 'Deleting…' : `Clear All ${rows.length} SKUs`}
+                {clearing ? 'Deletingâ¦' : `Clear All ${rows.length} SKUs`}
               </button>
             )}
           </>
@@ -324,7 +313,7 @@ export default function VendorSkus() {
         {isPendingUpload && (
           <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-700 text-xs font-semibold flex items-center gap-2">
             <RefreshCw className="w-3.5 h-3.5" />
-            {rows.length} rows parsed from file — click <strong>Save</strong> to persist to Supabase.
+            {rows.length} rows parsed from file â click <strong>Save</strong> to persist to Supabase.
           </div>
         )}
 
@@ -353,7 +342,7 @@ export default function VendorSkus() {
             </div>
           ) : loadingRows ? (
                     <div className="flex items-center justify-center h-full min-h-[120px]">
-              <Loader />
+              <DotSpinner />
             </div>
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-slate-400">
@@ -390,12 +379,12 @@ export default function VendorSkus() {
                 {filtered.map((r, i) => (
                   <tr key={`${r.sku}-${i}`} className={`transition-colors duration-100 ${i % 2 === 0 ? 'bg-white hover:bg-orange-50' : 'bg-slate-50/30 hover:bg-orange-50'}`}>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-700">{r.sku}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || '—'}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || 'â'}</td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || '—'}</span>
+                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || 'â'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-left text-slate-700">
-                      <span className="block truncate" title={r.model_name}>{r.model_name || '—'}</span>
+                      <span className="block truncate" title={r.model_name}>{r.model_name || 'â'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(r.price_before)}</td>
                     <td className="px-3 py-2.5 text-center font-mono font-semibold" style={{color:'#f97316'}}>{fmt(r.price_after)}</td>
