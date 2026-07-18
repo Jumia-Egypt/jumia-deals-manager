@@ -3,7 +3,7 @@ import { UploadCloud, Save, Search, ChevronDown, Check, Users, Trash2, RefreshCw
 import * as XLSX from 'xlsx';
 
 
-/* ââ Confirm Modal âââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Confirm Modal Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 interface ConfirmModalProps {
   vendorName: string;
   skuCount: number;
@@ -48,7 +48,7 @@ function ConfirmModal({ vendorName, skuCount, onConfirm, onCancel }: ConfirmModa
   );
 }
 
-/* ââ Dropdown ââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Dropdown Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 interface DropdownProps {
   value: string;
   onChange: (val: string) => void;
@@ -116,7 +116,7 @@ function DotSpinner() {
   );
 }
 
-/* ââ Types âââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Types Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 interface ParsedRow { sku: string; supplier_sku: string; brand: string; model_name: string; price_before: number; price_after: number; live_stock: number; }
 interface Vendor { id: string; name: string; email: string; role: string; }
 
@@ -130,7 +130,7 @@ const COL_MAP: Record<string, string> = {
   availablestock:'live_stock', livestock:'live_stock', stock:'live_stock', qty:'live_stock', quantity:'live_stock', availqty:'live_stock',
 };
 
-/* ââ Main Component ââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Main Component Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export default function VendorSkus() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
@@ -230,7 +230,7 @@ export default function VendorSkus() {
     return mb && ms;
   });
 
-  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : 'â';
+  const fmt = (n: number) => n > 0 ? `EGP ${Number(n).toLocaleString()}` : 'Ã¢ÂÂ';
   const stockBadge = (qty: number) => {
     if (!qty && qty !== 0) return 'bg-slate-100 text-slate-600 border-slate-200';
     if (qty > 50) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -286,15 +286,15 @@ export default function VendorSkus() {
               <button type="button" onClick={handleSave} disabled={saving}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
                 <Save className="w-4 h-4" />
-                {saving ? 'Savingâ¦' : `Save ${rows.length} products`}
+                {saving ? 'SavingÃ¢ÂÂ¦' : `Save ${rows.length} products`}
               </button>
             )}
 
             {rows.length > 0 && !isPendingUpload && (
-              <button type="button" onClick={() => setShowClearConfirm(true)} disabled={clearing}
+              <button type="button" onClick={() => setShowConfirm(true)} disabled={clearing}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed ml-auto">
                 <Trash2 className="w-3.5 h-3.5" />
-                {clearing ? 'Deletingâ¦' : `Clear All ${rows.length} SKUs`}
+                {clearing ? 'DeletingÃ¢ÂÂ¦' : `Clear All ${rows.length} SKUs`}
               </button>
             )}
           </>
@@ -313,7 +313,7 @@ export default function VendorSkus() {
         {isPendingUpload && (
           <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-700 text-xs font-semibold flex items-center gap-2">
             <RefreshCw className="w-3.5 h-3.5" />
-            {rows.length} rows parsed from file â click <strong>Save</strong> to persist to Supabase.
+            {rows.length} rows parsed from file Ã¢ÂÂ click <strong>Save</strong> to persist to Supabase.
           </div>
         )}
 
@@ -379,12 +379,12 @@ export default function VendorSkus() {
                 {filtered.map((r, i) => (
                   <tr key={`${r.sku}-${i}`} className={`transition-colors duration-100 ${i % 2 === 0 ? 'bg-white hover:bg-orange-50' : 'bg-slate-50/30 hover:bg-orange-50'}`}>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-700">{r.sku}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || 'â'}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-slate-500 truncate max-w-[110px]" title={r.supplier_sku}>{r.supplier_sku || 'Ã¢ÂÂ'}</td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || 'â'}</span>
+                      <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md shadow-sm">{r.brand || 'Ã¢ÂÂ'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-left text-slate-700">
-                      <span className="block truncate" title={r.model_name}>{r.model_name || 'â'}</span>
+                      <span className="block truncate" title={r.model_name}>{r.model_name || 'Ã¢ÂÂ'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center font-mono text-slate-400 line-through">{fmt(r.price_before)}</td>
                     <td className="px-3 py-2.5 text-center font-mono font-semibold" style={{color:'#f97316'}}>{fmt(r.price_after)}</td>
