@@ -222,7 +222,7 @@ export function VendorManagement() {
 
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
 
-  // Sync from Supabase on mount Ã¢ÂÂ Supabase is source of truth for who exists
+  // Sync from Supabase on mount ÃÂ¢ÃÂÃÂ Supabase is source of truth for who exists
   useEffect(() => {
     fetch('/api/vendors')
       .then(r => r.json())
@@ -257,7 +257,7 @@ export function VendorManagement() {
       .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
         const dailyData = rows.map((r: any) => ({
-          date: r.date, // Supabase returns YYYY-MM-DD Ã¢ÂÂ use directly
+          date: r.date, // Supabase returns YYYY-MM-DD ÃÂ¢ÃÂÃÂ use directly
           gmv: Number(r.gmv),
           orders: Number(r.gross_orders),
           items: Number(r.gross_items),
@@ -327,7 +327,7 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (selectedVendor?.dailyData?.length > 0) {
       try {
-        // Dates are already YYYY-MM-DD Ã¢ÂÂ use directly
+        // Dates are already YYYY-MM-DD ÃÂ¢ÃÂÃÂ use directly
         const rows = selectedVendor.dailyData
           .map((r: any) => ({
             date: r.date,
@@ -479,7 +479,7 @@ export function VendorManagement() {
 
     // Use SheetJS for ALL file types (xlsx, xls, csv, tsv, ods, txt).
     // This correctly handles CSV numbers with thousand-separators like "213,908"
-    // because SheetJS treats them as quoted fields Ã¢ÂÂ the naive comma-split breaks them.
+    // because SheetJS treats them as quoted fields ÃÂ¢ÃÂÃÂ the naive comma-split breaks them.
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
@@ -488,7 +488,7 @@ export function VendorManagement() {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rawRows: Record<string, any>[] = (XLSX as any).utils.sheet_to_json(ws, { defval: '' });
 
-        // Convert any date representation Ã¢ÂÂ ISO string YYYY-MM-DD
+        // Convert any date representation ÃÂ¢ÃÂÃÂ ISO string YYYY-MM-DD
         const resolveDate = (val: any): string | null => {
           let d: Date | null = null;
           if (val instanceof Date && !isNaN(val.getTime())) {
@@ -523,7 +523,7 @@ export function VendorManagement() {
           const isoDate = resolveDate(dateVal);
           if (!isoDate) continue;
 
-          // Strip commas from numbers (handles "213,908" Ã¢ÂÂ 213908)
+          // Strip commas from numbers (handles "213,908" ÃÂ¢ÃÂÃÂ 213908)
           const gmv    = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
           const orders = parseInt(String(ordVal).replace(/,/g, ''), 10) || 0;
           const items  = parseInt(String(itmVal).replace(/,/g, ''), 10) || 0;
@@ -914,20 +914,20 @@ export function VendorManagement() {
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr className="bg-white border-b border-slate-200 text-xs uppercase tracking-widest text-slate-400 font-black">
-                  <th className="p-4 pl-6 w-52">Date</th>
-                  <th className="p-4">GMV Achieved</th>
-                  <th className="p-4">Orders</th>
-                  <th className="p-4">Items Sold</th>
+                  <th className="p-4 pl-6 w-52 text-center">Date</th>
+                  <th className="p-4 text-center">GMV Achieved</th>
+                  <th className="p-4 text-center">Orders</th>
+                  <th className="p-4 text-center">Items Sold</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 <AnimatePresence>
                   {selectedVendor.dailyData?.map((day: any, idx: number) => (
                     <motion.tr key={idx} initial={{ opacity: 0, backgroundColor: '#fff7ed' }} animate={{ opacity: 1, backgroundColor: '#ffffff' }} exit={{ opacity: 0, scale: 0.98, backgroundColor: '#fef2f2' }} className="group hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 pl-6"><DailyDatePicker value={day.date} onChange={(formatted) => handleUpdateDailyData(idx, 'date', formatted)} /></td>
-                      <td className="p-4"><input type="text" placeholder="0" value={day.gmv ? Number(day.gmv).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'gmv', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px]" /></td>
-                      <td className="p-4"><input type="text" placeholder="0" value={day.orders ? Number(day.orders).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'orders', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px]" /></td>
-                      <td className="p-4"><input type="text" placeholder="0" value={day.items ? Number(day.items).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'items', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px]" /></td>
+                      <td className="p-4 pl-6 text-center"><DailyDatePicker value={day.date} onChange={(formatted) => handleUpdateDailyData(idx, 'date', formatted)} /></td>
+                      <td className="p-4 text-center"><input type="text" placeholder="0" value={day.gmv ? Number(day.gmv).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'gmv', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px] text-center" /></td>
+                      <td className="p-4 text-center"><input type="text" placeholder="0" value={day.orders ? Number(day.orders).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'orders', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px] text-center" /></td>
+                      <td className="p-4 text-center"><input type="text" placeholder="0" value={day.items ? Number(day.items).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'items', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px] text-center" /></td>
                     </motion.tr>
                   ))}
                 </AnimatePresence>
@@ -1077,7 +1077,7 @@ export function VendorManagement() {
                   <input
                     type="password"
                     required
-                    placeholder="Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢"
+                    placeholder="ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢"
                     value={newVendorPassword}
                     onChange={(e) => setNewVendorPassword(e.target.value)}
                     className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
@@ -1195,7 +1195,7 @@ export function VendorManagement() {
                         <div className="flex items-center gap-1.5 font-medium">
                           <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                            {isPassVisible ? (vendor.password || 'password123') : 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢'}
+                            {isPassVisible ? (vendor.password || 'password123') : 'ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢'}
                           </span>
                           <button
                             type="button"
@@ -1281,7 +1281,7 @@ export function VendorManagement() {
                           <div className="flex items-center gap-1.5 font-medium">
                             <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                              {isPassVisible ? (vendor.password || 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢') : 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢'}
+                              {isPassVisible ? (vendor.password || 'ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢') : 'ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢'}
                             </span>
                             <button type="button" onClick={(e) => togglePasswordVisibility(vendor.id, e)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors">
                               {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
