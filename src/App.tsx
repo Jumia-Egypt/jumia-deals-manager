@@ -23,6 +23,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => { try { return sessionStorage.getItem('jdm_loggedIn') === '1'; } catch { return false; } });
   const [userRole, setUserRole] = useState<'admin' | 'vendor' | null>(() => { try { return (sessionStorage.getItem('jdm_role') as 'admin' | 'vendor' | null) || null; } catch { return null; } });
   const [userName, setUserName] = useState(() => { try { return sessionStorage.getItem('jdm_name') || ''; } catch { return ''; } });
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [loggedInVendorId, setLoggedInVendorId] = useState<string | null>(() => { try { return sessionStorage.getItem('jdm_vid') || null; } catch { return null; } });
 
   const handleNavigate = (tab: string) => {
