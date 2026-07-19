@@ -292,43 +292,65 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
         )}
 
         {/* Daily Breakdown */}
-        {selectedDay && (
-          <div className="bg-white rounded-2xl shadow-sm border-2 border-orange-200 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-base font-bold text-slate-800">Daily Breakdown</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Performance on {selectedDay.date}</p>
+        <AnimatePresence>
+          {selectedDay && (
+            <motion.div
+              key={selectedDay.date}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mt-6 bg-white rounded-2xl shadow-sm border-2 border-orange-200 p-6"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">Daily Breakdown</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Performance on {selectedDay.date}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">{selectedDay.date}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDay(null)}
+                    className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/50"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
-              <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">{selectedDay.date}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-orange-50 rounded-xl p-4 text-center">
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">GMV</p>
-                <p className="text-base font-bold text-orange-600">{selectedDay.gmv.toLocaleString('en-EG')} EGP</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-orange-50 rounded-xl p-4 text-center">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">GMV</p>
+                  <p className="text-base font-bold text-orange-600">{selectedDay.gmv.toLocaleString()} EGP</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Orders</p>
+                  <p className="text-base font-bold text-slate-800">{selectedDay.orders.toLocaleString()}</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Items Sold</p>
+                  <p className="text-base font-bold text-slate-800">{selectedDay.items.toLocaleString()}</p>
+                </div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-center">
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Orders</p>
-                <p className="text-base font-bold text-slate-800">{selectedDay.orders.toLocaleString()}</p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-center">
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Items Sold</p>
-                <p className="text-base font-bold text-slate-800">{selectedDay.items.toLocaleString()}</p>
-              </div>
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {!selectedDay && (
+          <div className="mt-6 flex items-center gap-2.5 text-xs font-semibold text-slate-400 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <Info className="w-4 h-4 text-orange-500 shrink-0" />
+            <span>Tip: Click on any date point inside the graph above to view its detailed breakdown for GMV, Orders, and Gross IS.</span>
           </div>
         )}
 
         {/* Model Performance – GIS */}
-        <div className={`bg-white rounded-2xl shadow-sm border-2 p-6 overflow-hidden transition-colors ${selectedDay ? 'border-orange-200' : 'border-slate-200'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-800">Model Performance {'–'} GIS</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {selectedDay ? `Items sold on ${selectedDay.date}` : 'All-time totals'}
-              </p>
-            </div>
+        <div className={`mt-4 bg-white rounded-2xl shadow-sm border-2 overflow-hidden transition-colors ${selectedDay ? 'border-orange-200' : 'border-slate-200'}`}>
+          <div className={`flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 transition-colors ${selectedDay ? 'bg-orange-50' : 'bg-slate-50'}`}>
+            <Package className={`w-4 h-4 ${selectedDay ? 'text-orange-500' : 'text-slate-400'}`} />
+            <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
+              Model Performance {'–'} GIS{selectedDay ? ` — ${selectedDay.date}` : ''}
+            </h4>
             {selectedDay && (
-              <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">{selectedDay.date}</span>
+              <span className="ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">{selectedDay.date}</span>
             )}
           </div>
           <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
@@ -338,11 +360,11 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
                 : modelsData;
               if (items.length === 0) return (
                 <p className="text-sm text-slate-400 text-center py-8">
-                  {selectedDay ? `No items sold on ${selectedDay.date}` : 'No model data available'}
+                  {selectedDay ? `No model data for ${selectedDay.date}` : 'No model data available'}
                 </p>
               );
               return items.map((r: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between py-2.5">
+                <div key={idx} className="flex items-center justify-between py-2.5 px-5">
                   <span className="text-xs text-slate-700 flex-1 pr-4">{r.model_name}</span>
                   <span className="text-xs font-bold text-orange-600 shrink-0">{r.gross_items} units</span>
                 </div>
@@ -350,6 +372,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
             })()}
           </div>
         </div>
-
+      </div>
+    </div>
   );
 }
