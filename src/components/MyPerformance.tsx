@@ -59,6 +59,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           gmv: Number(r.gmv),
           orders: Number(r.gross_orders),
           items: Number(r.gross_items),
+          rawDate: r.date,
         }));
         const achievementGMV = dailyData.reduce((s: number, r: any) => s + r.gmv, 0);
         const countOfOrders  = dailyData.reduce((s: number, r: any) => s + r.orders, 0);
@@ -295,7 +296,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           <div className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-800">Model Performance — GIS</h3>
+                <h3 className="text-sm font-bold text-slate-800">Model Performance â GIS</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {selectedDay ? `Items sold on ${selectedDay.date}` : 'All-time totals'}
                 </p>
@@ -309,7 +310,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
             <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
               {(() => {
                 const filtered = selectedDay
-                  ? modelsData.filter((r: any) => r.date === selectedDay.date)
+                  ? modelsData.filter((r: any) => r.date === selectedDay.rawDate)
                   : modelsData;
                 const grouped: Record<string, number> = {};
                 filtered.forEach((r: any) => {
