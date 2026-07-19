@@ -92,14 +92,10 @@ function Dropdown({ value, onChange, options, placeholder, className = '' }: Dro
 
 function Loader() {
   return (
-    <>
-      <style>{`.jumia-loader{--dim:2.2rem;background-color:#f97316;opacity:0.55;width:var(--dim);height:var(--dim);border-radius:50%;display:grid;place-items:center;animation:spin_412 5s infinite;} .jumia-loader svg{transform:translateY(-1px) scale(.65);} @keyframes spin_412{0%{transform:rotate(0) scale(1);}50%{transform:rotate(720deg) scale(1.2);}100%{transform:rotate(0) scale(1);}}`}</style>
-      <div className="jumia-loader">
-        <svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg">
-          <path style={{ fill: '#fff' }} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z" />
-        </svg>
-      </div>
-    </>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'4rem 0'}}>
+      <style>{`.jl{--d:4rem;background:#f97316;width:var(--d);height:var(--d);border-radius:50%;display:grid;place-items:center;animation:sp412 5s infinite;box-shadow:0 0 30px rgba(249,115,22,.3)}.jl svg{transform:translateY(-2px) scale(.7)}@keyframes sp412{0%{transform:rotate(0) scale(1)}50%{transform:rotate(720deg) scale(1.3)}100%{transform:rotate(0) scale(1)}}`}</style>
+      <div className="jl"><svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg"><path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/></svg></div>
+    </div>
   );
 }
 
@@ -182,7 +178,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
   const updateEntry = (sku: string, field: 'promoPrice' | 'promoStock', value: string) =>
     setEntries(prev => prev.map(e => e.sku === sku ? { ...e, [field]: value } : e));
 
-  const fmt = (n: number) => (n > 0 ? `EGP ${n.toLocaleString()}` : '—');
+  const fmt = (n: number) => (n > 0 ? `EGP ${n.toLocaleString()}` : 'â');
 
   const getValidation = (p: ProductEntry): { valid: boolean; reason: string } => {
     const hasPrice = p.promoPrice && parseFloat(p.promoPrice) > 0;
@@ -359,7 +355,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                 <div key={p.sku} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex-1 min-w-0 text-center sm:text-left">
                     <h4 className="text-sm font-black text-slate-800 truncate">{p.model_name || p.sku}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.sku} · {p.brand}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.sku} Â· {p.brand}</p>
                   </div>
                   <div className="grid grid-cols-3 gap-x-6 gap-y-1 text-center sm:text-right shrink-0">
                     <div>
@@ -488,14 +484,14 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                         {/* Brand */}
                         <td className="px-3 py-3 text-center">
                           <span className="inline-block bg-white border border-slate-200 text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-sm max-w-full truncate">
-                            {p.brand || '—'}
+                            {p.brand || 'â'}
                           </span>
                         </td>
 
                         {/* Model Name + SKU */}
                         <td className="px-3 py-3 text-left overflow-hidden max-w-0">
                           <span className="block font-semibold text-slate-800 truncate leading-tight text-[11px]" title={p.model_name}>
-                            {p.model_name || '—'}
+                            {p.model_name || 'â'}
                           </span>
                           <span className="block text-[10px] text-slate-400 font-mono mt-0.5">
                             SKU: {p.sku}
@@ -507,7 +503,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                           {fmt(p.price_after)}
                         </td>
 
-                        {/* Best Price — placeholder */}
+                        {/* Best Price â placeholder */}
                         <td className="px-3 py-3 text-center font-mono text-slate-400 text-[11px]">
                           EGP 0
                         </td>
@@ -529,7 +525,7 @@ export function CampaignDetails({ campaign, onBack, userRole, vendorId, vendorNa
                         {/* Validation / Status */}
                         <td className="px-3 py-3 text-center">
                           {!showStatus ? (
-                            <span className="text-slate-300 text-[10px]">—</span>
+                            <span className="text-slate-300 text-[10px]">â</span>
                           ) : v.valid ? (
                             <div className="flex items-center justify-center">
                               <div className="w-7 h-7 rounded-full bg-green-50 border border-green-200 flex items-center justify-center shadow-sm">
