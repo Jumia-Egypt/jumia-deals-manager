@@ -345,18 +345,18 @@ module.exports = async function handler(req, res) {
       return res.status(201).json(data);
     }
     if (req.method === 'PUT') {
-      const { id } = q;
+      const id = parts[1] || q.id;
       if (!id) return res.status(400).json({ error: 'ID required' });
       const updates = {};
       if (body.name !== undefined) updates.name = body.name;
       if (body.email !== undefined) updates.email = body.email.toLowerCase().trim();
       if (body.password !== undefined) updates.password = body.password;
-      const { data, error } = await supabase.from('users').update(updates).eq('id', id).select('id,name,email,role,created_at').single();
+      const { data, error } = await supabase.from('users').update(updates).eq('id', id).select('id,name,email,role,password,created_at').single();
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data);
     }
     if (req.method === 'DELETE') {
-      const { id } = q;
+      const id = parts[1] || q.id;
       if (!id) return res.status(400).json({ error: 'ID required' });
       const { error } = await supabase.from('users').delete().eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
