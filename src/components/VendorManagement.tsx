@@ -854,9 +854,9 @@ export function VendorManagement() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Overall Target</h3>
                 <div className="space-y-4">
@@ -876,7 +876,7 @@ export function VendorManagement() {
               </div>
 
               {/* Right free space - Bulk File Upload Dropzone */}
-              <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8 space-y-4">
+              <div className="border-t border-slate-100 pt-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                     <Upload className="w-4 h-4 text-orange-500" />
