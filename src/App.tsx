@@ -60,9 +60,9 @@ export default function App() {
 
   return (<>
       {globalLoading && (
-        <div style={{position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(15,23,42,0.35)',backdropFilter:'blur(2px)'}}>
+        <div style={{position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(15,23,42,0.6)',backdropFilter:'blur(3px)'}}>
           <style>{`
-            .dot-spinner{--uib-size:2.8rem;--uib-speed:.9s;--uib-color:#f97316;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size)}
+            .dot-spinner{--uib-size:5rem;--uib-speed:.9s;--uib-color:#f97316;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size)}
             .dot-spinner__dot{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:flex-start;height:100%;width:100%}
             .dot-spinner__dot::before{content:'';height:20%;width:20%;border-radius:50%;background-color:var(--uib-color);transform:scale(0);opacity:.5;animation:pulse0112 calc(var(--uib-speed)*1.111) ease-in-out infinite}
             .dot-spinner__dot:nth-child(2){transform:rotate(45deg)}.dot-spinner__dot:nth-child(2)::before{animation-delay:calc(var(--uib-speed)*-.875)}
