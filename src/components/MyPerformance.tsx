@@ -83,18 +83,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
       });
   }, [vendorId]);
 
-  if (!vendorData) {
-    return (
-      <div className="flex items-center justify-center min-h-[120px]">
-        <style>{`.jumia-loader{--dim:2.2rem;background-color:#f97316;opacity:0.55;width:var(--dim);height:var(--dim);border-radius:50%;display:grid;place-items:center;animation:spin_412 5s infinite;} .jumia-loader svg{transform:translateY(-1px) scale(.65);} @keyframes spin_412{0%{transform:rotate(0) scale(1);}50%{transform:rotate(720deg) scale(1.2);}100%{transform:rotate(0) scale(1);}}`}</style>
-        <div className="jumia-loader">
-          <svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg">
-            <path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/>
-          </svg>
-        </div>
-      </div>
-    );
-  }
+  if (!vendorData) return <StarLoader />;
 
   const targetGMV = vendorData.targetGMV || 0;
   const currentGMV = vendorData.achievementGMV || 0;
@@ -309,7 +298,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           <div className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-800">Model Performance Ã¢ÂÂ GIS</h3>
+                <h3 className="text-sm font-bold text-slate-800">Model Performance ÃÂ¢ÃÂÃÂ GIS</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {selectedDay ? `Items sold on ${selectedDay.date}` : 'All-time totals'}
                 </p>
