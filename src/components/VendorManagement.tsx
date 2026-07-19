@@ -222,7 +222,7 @@ export function VendorManagement() {
 
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
 
-  // Sync from Supabase on mount â Supabase is source of truth for who exists
+  // Sync from Supabase on mount Ã¢ÂÂ Supabase is source of truth for who exists
   useEffect(() => {
     fetch('/api/vendors')
       .then(r => r.json())
@@ -257,7 +257,7 @@ export function VendorManagement() {
       .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
         const dailyData = rows.map((r: any) => ({
-          date: r.date, // Supabase returns YYYY-MM-DD â use directly
+          date: r.date, // Supabase returns YYYY-MM-DD Ã¢ÂÂ use directly
           gmv: Number(r.gmv),
           orders: Number(r.gross_orders),
           items: Number(r.gross_items),
@@ -327,7 +327,7 @@ export function VendorManagement() {
     const selectedVendor = vendors.find((v: any) => v.id === selectedVendorId);
     if (selectedVendor?.dailyData?.length > 0) {
       try {
-        // Dates are already YYYY-MM-DD â use directly
+        // Dates are already YYYY-MM-DD Ã¢ÂÂ use directly
         const rows = selectedVendor.dailyData
           .map((r: any) => ({
             date: r.date,
@@ -479,7 +479,7 @@ export function VendorManagement() {
 
     // Use SheetJS for ALL file types (xlsx, xls, csv, tsv, ods, txt).
     // This correctly handles CSV numbers with thousand-separators like "213,908"
-    // because SheetJS treats them as quoted fields â the naive comma-split breaks them.
+    // because SheetJS treats them as quoted fields Ã¢ÂÂ the naive comma-split breaks them.
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
@@ -488,7 +488,7 @@ export function VendorManagement() {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rawRows: Record<string, any>[] = (XLSX as any).utils.sheet_to_json(ws, { defval: '' });
 
-        // Convert any date representation â ISO string YYYY-MM-DD
+        // Convert any date representation Ã¢ÂÂ ISO string YYYY-MM-DD
         const resolveDate = (val: any): string | null => {
           let d: Date | null = null;
           if (val instanceof Date && !isNaN(val.getTime())) {
@@ -523,7 +523,7 @@ export function VendorManagement() {
           const isoDate = resolveDate(dateVal);
           if (!isoDate) continue;
 
-          // Strip commas from numbers (handles "213,908" â 213908)
+          // Strip commas from numbers (handles "213,908" Ã¢ÂÂ 213908)
           const gmv    = parseFloat(String(gmvVal).replace(/,/g, '')) || 0;
           const orders = parseInt(String(ordVal).replace(/,/g, ''), 10) || 0;
           const items  = parseInt(String(itmVal).replace(/,/g, ''), 10) || 0;
@@ -782,433 +782,225 @@ export function VendorManagement() {
 
   if (selectedVendor) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-8"
+      >
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-2 border-b border-slate-100">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSelectedVendorId(null)}
-              className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+              className="p-2.5 bg-white border border-slate-200 hover:border-orange-500 hover:text-orange-500 hover:shadow-sm rounded-full transition-all group"
             >
-              <ChevronLeft className="w-5 h-5 text-slate-700" />
+              <ChevronLeft className="w-5 h-5 text-slate-500 group-hover:text-orange-500" />
             </button>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{selectedVendor.name}</h2>
-              <p className="text-sm text-slate-500 mt-1">Manage targets and daily performance data.</p>
+              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{selectedVendor.name}</h2>
+              <p className="text-sm font-medium text-slate-500 mt-1 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                Vendor Performance Dashboard
+              </p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => handleOpenEditProfile(selectedVendor)}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 rounded-xl font-bold text-sm flex items-center gap-2 transition-all self-start sm:self-auto shadow-sm border border-slate-200/60 animate-in fade-in slide-in-from-top-1"
+            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm flex items-center gap-2 transition-all self-start sm:self-auto shadow-sm border border-slate-200 hover:border-slate-300"
           >
-            <Lock className="w-4 h-4 text-slate-500" />
+            <Lock className="w-4 h-4 text-slate-400" />
             Manage Profile
           </button>
         </div>
 
-        {/* Stats Row with Formatted Commas */}
+        {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-orange-50 rounded-xl text-orange-500">
-              <Target className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Target className="w-24 h-24" /></div>
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 mb-4"><Target className="w-6 h-6" /></div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Target GMV</p>
+              <h3 className="text-3xl font-black text-slate-800 tracking-tight">{Number(selectedVendor.targetGMV || 0).toLocaleString()} <span className="text-sm font-bold text-slate-400 uppercase">EGP</span></h3>
             </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Target GMV</p>
-              <h3 className="text-xl font-bold text-slate-800 mt-0.5">
-                {Number(selectedVendor.targetGMV || 0).toLocaleString()} <span className="text-xs font-medium text-slate-400">EGP</span>
-              </h3>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-green-50 rounded-xl text-green-500">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Achieved GMV</p>
-              <div className="flex items-baseline justify-between gap-2 mt-0.5">
-                <h3 className="text-xl font-bold text-slate-800">
-                  {Number(selectedVendor.achievementGMV || 0).toLocaleString()} <span className="text-xs font-medium text-slate-400">EGP</span>
-                </h3>
-                <span className="text-xs font-bold text-slate-500">
-                  {selectedVendor.targetGMV > 0
-                    ? `${((selectedVendor.achievementGMV / selectedVendor.targetGMV) * 100).toFixed(1)}%`
-                    : '0%'}
-                </span>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><TrendingUp className="w-24 h-24" /></div>
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-500 mb-4"><TrendingUp className="w-6 h-6" /></div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Achieved GMV</p>
+              <div className="flex items-end justify-between gap-2">
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight">{Number(selectedVendor.achievementGMV || 0).toLocaleString()} <span className="text-sm font-bold text-slate-400 uppercase">EGP</span></h3>
+                <div className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg mb-1 whitespace-nowrap">{selectedVendor.targetGMV > 0 ? `${((selectedVendor.achievementGMV / selectedVendor.targetGMV) * 100).toFixed(1)}%` : '0%'}</div>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-blue-50 rounded-xl text-blue-500">
-              <ShoppingCart className="w-5 h-5" />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><ShoppingCart className="w-24 h-24" /></div>
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-4"><Package className="w-6 h-6" /></div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Volume</p>
+              <div className="flex items-center gap-3">
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight">{Number(selectedVendor.countOfOrders || 0).toLocaleString()} <span className="text-sm font-bold text-slate-400">Orders</span></h3>
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-300 hidden md:block"></div>
+                <h3 className="text-xl font-bold text-slate-500 tracking-tight hidden md:block">{Number(selectedVendor.grossItemSold || 0).toLocaleString()} <span className="text-sm font-semibold">Items</span></h3>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Orders & Items</p>
-              <h3 className="text-xl font-bold text-slate-800 mt-0.5">
-                {Number(selectedVendor.countOfOrders || 0).toLocaleString()} <span className="text-xs font-medium text-slate-400">Orders</span>
-                <span className="mx-1.5 text-slate-300">/</span>
-                {Number(selectedVendor.grossItemSold || 0).toLocaleString()} <span className="text-xs font-medium text-slate-400">Items</span>
-              </h3>
-            </div>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Configuration Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2.5 bg-orange-100 text-orange-600 rounded-xl"><Target className="w-5 h-5" /></div>
+                <h3 className="text-lg font-bold text-slate-800">Monthly Target</h3>
+              </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Overall Target</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1.5 uppercase tracking-wider">Target GMV (EGP)</label>
-                    <input
-                      type="number"
-                      value={selectedVendor.targetGMV}
-                      onChange={(e) => handleUpdateVendor({ ...selectedVendor, targetGMV: Number(e.target.value) })}
-                      className="w-full max-w-md border border-slate-300 p-2.5 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm font-semibold text-slate-700"
-                    />
-                    <span className="text-xs font-semibold text-slate-400 mt-1.5 block">
-                      Formatted: <span className="font-bold text-orange-600">{Number(selectedVendor.targetGMV || 0).toLocaleString()} EGP</span>
-                    </span>
-                  </div>
+                <label className="text-xs font-black text-slate-400 block mb-2 uppercase tracking-wider">Target GMV (EGP)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">EGP</span>
+                  <input type="text" value={selectedVendor.targetGMV ? Number(selectedVendor.targetGMV).toLocaleString() : ''} onChange={(e) => handleUpdateVendor({ ...selectedVendor, targetGMV: Number(e.target.value.replace(/,/g, '')) })} className="w-full pl-14 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all text-lg font-black text-slate-700" />
                 </div>
               </div>
-
-              {/* Right free space - Bulk File Upload Dropzone */}
-              <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-orange-500" />
-                    Bulk Import Daily Data
-                  </h3>
-                </div>
-
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={clsx(
-                    "border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]",
-                    isDragging
-                      ? "border-orange-500 bg-orange-50/50 animate-pulse"
-                      : "border-slate-200 hover:border-orange-400 hover:bg-slate-50/50"
-                  )}
-                >
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept=".xlsx,.xls,.csv,.tsv,.ods,.txt"
-                    className="hidden"
-                  />
-                  <div className="p-3 bg-orange-50 rounded-full text-orange-500">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-700">Drag & drop your report file here</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Supports Excel, CSV, TSV or any spreadsheet format (.xlsx, .csv, .tsv, .ods)</p>
-                  </div>
-                </div>
-
-                {/* Upload status message */}
-                <AnimatePresence mode="wait">
-                  {uploadStatus !== 'idle' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      className={clsx(
-                        "p-3 rounded-xl text-xs flex items-center gap-2.5 font-semibold",
-                        uploadStatus === 'success' ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
-                      )}
-                    >
-                      {uploadStatus === 'success' ? (
-                        <Check className="w-4 h-4 text-green-500 shrink-0" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                      )}
-                      <span className="flex-1">{uploadMessage}</span>
-                      <button
-                        type="button"
-                        onClick={() => setUploadStatus('idle')}
-                        className="text-[10px] font-bold uppercase tracking-wider opacity-60 hover:opacity-100"
-                      >
-                        Clear
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+            </div>
+            <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">Updates to the target GMV instantly recalculate achievement progress.</p>
             </div>
           </div>
-
-          {/* Box 2: Import Models & GIS */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-orange-500" />
-              Import Models &amp; GIS Data
-            </h3>
-            <div
-              className={modelsIsDragging ? 'border-2 border-dashed rounded-xl p-8 text-center transition-colors border-orange-400 bg-orange-50' : 'border-2 border-dashed rounded-xl p-8 text-center transition-colors border-slate-300 hover:border-orange-300'}
-              onDragOver={(e) => { e.preventDefault(); setModelsIsDragging(true); }}
-              onDragLeave={() => setModelsIsDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setModelsIsDragging(false);
-                const f = e.dataTransfer.files[0];
-                if (f) handleModelsFile(f);
-              }}
-              onClick={() => modelsFileRef.current?.click()}
-              style={{ cursor: 'pointer' }}
-            >
-              <input
-                ref={modelsFileRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleModelsFile(f);
-                }}
-              />
-              <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-              <p className="text-sm font-medium text-slate-600">Drop your Models &amp; GIS file here</p>
-              <p className="text-xs text-slate-400 mt-1">Supports .xlsx, .xls, .csv</p>
-            </div>
-            {modelsRows.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm text-slate-600 mb-3">
-                  {modelsRows.length} {modelsRows.length !== 1 ? 'rows' : 'row'} ready to upload
-                </p>
-                <button
-                  onClick={handleModelsUpload}
-                  disabled={modelsUploading}
-                  className="w-full py-2.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl text-sm font-medium transition-colors"
-                >
-                  {modelsUploading ? 'Uploading...' : 'Upload Models Data'}
-                </button>
+          <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl"><FileText className="w-5 h-5" /></div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Bulk Import</h3>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">Upload CSV or JSON to populate daily data instantly</p>
               </div>
-            )}
-            {modelsUploadMsg && (
-              <p className={modelsUploadMsg.startsWith('Error') ? 'mt-3 text-sm text-center text-red-500' : 'mt-3 text-sm text-center text-green-600'}>
-                {modelsUploadMsg}
-              </p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-slate-800">Daily Achievements</h3>
-              <button
-                onClick={handleAddDailyData}
-                className="bg-orange-50 text-orange-600 hover:bg-orange-100 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Add Day
-              </button>
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-bold">
-                    <th className="p-3 w-48">Date (YYYY-MM-DD)</th>
-                    <th className="p-3">Achieved GMV</th>
-                    <th className="p-3">Count of Orders</th>
-                    <th className="p-3">Gross Items Sold</th>
-                    <th className="p-3 w-16"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {selectedVendor.dailyData?.map((day, idx) => (
-                    <tr key={idx}>
-                      <td className="p-3">
-                        <DailyDatePicker
-                          value={day.date}
-                          onChange={(formatted) => handleUpdateDailyData(idx, 'date', formatted)}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <input
-                          type="number"
-                          placeholder="GMV"
-                          value={day.gmv}
-                          onChange={(e) => handleUpdateDailyData(idx, 'gmv', Number(e.target.value))}
-                          className="w-full border border-slate-200 p-2 rounded-lg text-sm outline-none focus:border-orange-500 font-semibold text-slate-700"
-                        />
-                        <span className="text-[11px] text-slate-400 mt-1 block font-medium">
-                          {Number(day.gmv || 0).toLocaleString()} EGP
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <input
-                          type="number"
-                          placeholder="Orders"
-                          value={day.orders}
-                          onChange={(e) => handleUpdateDailyData(idx, 'orders', Number(e.target.value))}
-                          className="w-full border border-slate-200 p-2 rounded-lg text-sm outline-none focus:border-orange-500 font-semibold text-slate-700"
-                        />
-                        <span className="text-[11px] text-slate-400 mt-1 block font-medium">
-                          {Number(day.orders || 0).toLocaleString()} Orders
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <input
-                          type="number"
-                          placeholder="Items"
-                          value={day.items}
-                          onChange={(e) => handleUpdateDailyData(idx, 'items', Number(e.target.value))}
-                          className="w-full border border-slate-200 p-2 rounded-lg text-sm outline-none focus:border-orange-500 font-semibold text-slate-700"
-                        />
-                        <span className="text-[11px] text-slate-400 mt-1 block font-medium">
-                          {Number(day.items || 0).toLocaleString()} Items
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <button
-                          onClick={() => handleDeleteDailyData(idx)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {(!selectedVendor.dailyData || selectedVendor.dailyData.length === 0) && (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-400 italic text-sm">
-                        No daily data recorded yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv,.json,.txt" className="hidden" />
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={clsx("flex-1 border-2 border-dashed rounded-3xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-4 min-h-[160px] group", isDragging ? "border-orange-500 bg-orange-50/50 scale-[0.99]" : "border-slate-200 hover:border-orange-400 hover:bg-slate-50/80")}>
+                <div className={clsx("p-4 rounded-full transition-colors", isDragging ? "bg-orange-100 text-orange-600" : "bg-white border border-slate-200 text-slate-400 group-hover:text-orange-500 group-hover:border-orange-200 group-hover:bg-orange-50")}><Upload className="w-6 h-6" /></div>
+                <div><p className="text-sm font-bold text-slate-700">GMV - IS - Orders</p><p className="text-xs font-medium text-slate-400 mt-1">Click or drag file</p></div>
+              </div>
+              <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={clsx("flex-1 border-2 border-dashed rounded-3xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-4 min-h-[160px] group", isDragging ? "border-orange-500 bg-orange-50/50 scale-[0.99]" : "border-slate-200 hover:border-orange-400 hover:bg-slate-50/80")}>
+                <div className={clsx("p-4 rounded-full transition-colors", isDragging ? "bg-orange-100 text-orange-600" : "bg-white border border-slate-200 text-slate-400 group-hover:text-orange-500 group-hover:border-orange-200 group-hover:bg-orange-50")}><Upload className="w-6 h-6" /></div>
+                <div><p className="text-sm font-bold text-slate-700">Model Name - IS</p><p className="text-xs font-medium text-slate-400 mt-1">Click or drag file</p></div>
+              </div>
             </div>
+            <AnimatePresence mode="wait">
+              {uploadStatus !== 'idle' && (
+                <motion.div initial={{ opacity: 0, height: 0, marginTop: 0 }} animate={{ opacity: 1, height: 'auto', marginTop: 16 }} exit={{ opacity: 0, height: 0, marginTop: 0 }} className="overflow-hidden">
+                  <div className={clsx("p-4 rounded-2xl text-sm flex items-start gap-3 font-semibold", uploadStatus === 'success' ? "bg-green-50 text-green-800 border border-green-200/50" : "bg-red-50 text-red-800 border border-red-200/50")}>
+                    {uploadStatus === 'success' ? <div className="p-1 bg-green-100 rounded-full shrink-0"><Check className="w-4 h-4 text-green-600" /></div> : <div className="p-1 bg-red-100 rounded-full shrink-0"><AlertCircle className="w-4 h-4 text-red-600" /></div>}
+                    <div className="flex-1 pt-0.5"><p>{uploadMessage}</p></div>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setUploadStatus('idle'); }} className="p-1 text-slate-400 hover:bg-black/5 rounded-lg transition-colors"><X className="w-4 h-4" /></button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
+        {/* Daily Data Table */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              Daily Performance Log
+              <span className="px-2.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-black rounded-full">{selectedVendor.dailyData?.length || 0}</span>
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs uppercase tracking-widest text-slate-400 font-black">
+                  <th className="p-4 pl-6 w-52">Date</th>
+                  <th className="p-4">GMV Achieved</th>
+                  <th className="p-4">Orders</th>
+                  <th className="p-4">Items Sold</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                <AnimatePresence>
+                  {selectedVendor.dailyData?.map((day: any, idx: number) => (
+                    <motion.tr key={idx} initial={{ opacity: 0, backgroundColor: '#fff7ed' }} animate={{ opacity: 1, backgroundColor: '#ffffff' }} exit={{ opacity: 0, scale: 0.98, backgroundColor: '#fef2f2' }} className="group hover:bg-slate-50/50 transition-colors">
+                      <td className="p-4 pl-6"><DailyDatePicker value={day.date} onChange={(formatted) => handleUpdateDailyData(idx, 'date', formatted)} /></td>
+                      <td className="p-4"><input type="text" placeholder="0" value={day.gmv ? Number(day.gmv).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'gmv', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px]" /></td>
+                      <td className="p-4"><input type="text" placeholder="0" value={day.orders ? Number(day.orders).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'orders', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px]" /></td>
+                      <td className="p-4"><input type="text" placeholder="0" value={day.items ? Number(day.items).toLocaleString() : ''} onChange={(e) => handleUpdateDailyData(idx, 'items', Number(e.target.value.replace(/,/g, '')))} className="w-full bg-white border border-slate-200 hover:border-orange-500 focus:border-orange-500 p-2.5 rounded-lg text-sm outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 h-[38px]" /></td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+                {(!selectedVendor.dailyData || selectedVendor.dailyData.length === 0) && (
+                  <tr><td colSpan={4} className="p-12 text-center">
+                    <div className="inline-flex flex-col items-center justify-center text-slate-400">
+                      <Calendar className="w-12 h-12 mb-3 text-slate-200" />
+                      <p className="text-base font-bold text-slate-500">No daily data recorded yet</p>
+                      <p className="text-sm mt-1">Upload a bulk file to add records.</p>
+                    </div>
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Floating Success Notice */}
         <AnimatePresence>
           {showSubmitSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center justify-between shadow-sm"
-            >
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                <span className="font-semibold text-sm">Inputs Submitted & Saved Successfully!</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowSubmitSuccess(false)}
-                className="text-green-500 hover:text-green-700 text-xs font-bold"
-              >
-                Dismiss
-              </button>
+            <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.9 }} className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-6 py-4 bg-slate-900 text-white rounded-full flex items-center gap-3 shadow-2xl shadow-orange-500/20 border border-slate-700">
+              <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center"><Check className="w-4 h-4 text-green-400" /></div>
+              <span className="font-bold text-sm tracking-wide">All changes saved successfully</span>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-          <button
-            type="button"
-            onClick={() => setSelectedVendorId(null)}
-            className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
-          >
-            Back to List
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmitInputs}
-            className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white rounded-xl text-sm font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Submit Inputs
-          </button>
+        {/* Footer Actions */}
+        <div className="sticky bottom-6 z-40 bg-white/80 backdrop-blur-md p-4 rounded-3xl border border-slate-200/50 shadow-lg shadow-slate-200/50 flex items-center justify-between">
+          <button type="button" onClick={() => setSelectedVendorId(null)} className="px-6 py-3 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 rounded-2xl text-sm font-bold transition-all shadow-sm">Back to Directory</button>
+          <button type="button" onClick={handleSubmitInputs} className="px-8 py-3 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white rounded-2xl text-sm font-black shadow-lg shadow-orange-500/30 transition-all flex items-center gap-2"><Save className="w-5 h-5" />Save Changes</button>
         </div>
 
-        {/* Custom Manage Profile Modal in Vendor View */}
+        {/* Manage Profile Modal */}
         <AnimatePresence>
           {isEditingProfile && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col p-6"
-              >
-                <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-orange-500" />
-                  Manage Vendor Profile
-                </h3>
-                <p className="text-xs text-slate-400 mb-4">
-                  Update login credentials and account settings for <span className="font-bold text-slate-600">{selectedVendor?.name}</span>.
-                </p>
-
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden flex flex-col p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 mb-1">Account Settings</h3>
+                    <p className="text-sm font-medium text-slate-500">Manage credentials for <span className="text-orange-600 font-bold">{selectedVendor?.name}</span></p>
+                  </div>
+                  <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl"><Lock className="w-6 h-6" /></div>
+                </div>
                 {editProfileError && (
-                  <div className="p-3 bg-red-50 text-red-600 text-xs font-semibold rounded-xl border border-red-100 mb-4">
-                    {editProfileError}
-                  </div>
+                  <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }} className="p-4 bg-red-50 text-red-700 text-sm font-bold rounded-2xl border border-red-100 mb-6 flex gap-3 items-start">
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" /><p>{editProfileError}</p>
+                  </motion.div>
                 )}
-
-                <div className="space-y-4 mb-6">
+                <div className="space-y-5 mb-8">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Vendor Name</label>
-                    <input
-                      type="text"
-                      value={editVendorName}
-                      onChange={(e) => setEditVendorName(e.target.value)}
-                      className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-semibold text-slate-700"
-                    />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">Vendor Name</label>
+                    <input type="text" value={editVendorName} onChange={(e) => setEditVendorName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-base outline-none focus:bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-bold text-slate-800" />
                   </div>
-
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Login Email</label>
-                    <input
-                      type="email"
-                      value={editVendorEmail}
-                      onChange={(e) => setEditVendorEmail(e.target.value)}
-                      className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-semibold text-slate-700"
-                    />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">Login Email</label>
+                    <input type="email" value={editVendorEmail} onChange={(e) => setEditVendorEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-base outline-none focus:bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-bold text-slate-800" />
                   </div>
-
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Login Password</label>
-                    <input
-                      type="text"
-                      value={editVendorPassword}
-                      onChange={(e) => setEditVendorPassword(e.target.value)}
-                      className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-mono font-semibold text-slate-700"
-                    />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">Login Password</label>
+                    <input type="text" value={editVendorPassword} onChange={(e) => setEditVendorPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-base outline-none focus:bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-mono font-bold text-slate-800 tracking-wide" />
                   </div>
                 </div>
-
-                <div className="flex gap-3 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingProfile(false)}
-                    className="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSaveProfile(selectedVendor?.id)}
-                    className="px-5 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-sm shadow-orange-500/10"
-                  >
-                    Save Changes
-                  </button>
+                <div className="flex gap-4 justify-end pt-2">
+                  <button type="button" onClick={() => setIsEditingProfile(false)} className="flex-1 px-4 py-3.5 border border-slate-200 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+                  <button type="button" onClick={() => handleSaveProfile(selectedVendor?.id)} className="flex-1 px-4 py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all shadow-md active:scale-95">Save Changes</button>
                 </div>
               </motion.div>
             </div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     );
   }
 
@@ -1285,7 +1077,7 @@ export function VendorManagement() {
                   <input
                     type="password"
                     required
-                    placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"
+                    placeholder="Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢"
                     value={newVendorPassword}
                     onChange={(e) => setNewVendorPassword(e.target.value)}
                     className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
@@ -1403,7 +1195,7 @@ export function VendorManagement() {
                         <div className="flex items-center gap-1.5 font-medium">
                           <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                            {isPassVisible ? (vendor.password || 'password123') : 'â¢â¢â¢â¢â¢â¢â¢â¢'}
+                            {isPassVisible ? (vendor.password || 'password123') : 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢'}
                           </span>
                           <button
                             type="button"
@@ -1489,7 +1281,7 @@ export function VendorManagement() {
                           <div className="flex items-center gap-1.5 font-medium">
                             <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                              {isPassVisible ? (vendor.password || 'â¢â¢â¢â¢â¢â¢â¢â¢') : 'â¢â¢â¢â¢â¢â¢â¢â¢'}
+                              {isPassVisible ? (vendor.password || 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢') : 'Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢'}
                             </span>
                             <button type="button" onClick={(e) => togglePasswordVisibility(vendor.id, e)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors">
                               {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
