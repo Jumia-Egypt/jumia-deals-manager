@@ -27,6 +27,16 @@ interface CalendarDashboardProps {
 
 
 
+function StarLoader() {
+  return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'4rem 0'}}>
+      <style>{`.jl{--d:4rem;background:#f97316;width:var(--d);height:var(--d);border-radius:50%;display:grid;place-items:center;animation:sp412 5s infinite;box-shadow:0 0 30px rgba(249,115,22,.3)}.jl svg{transform:translateY(-2px) scale(.7)}@keyframes sp412{0%{transform:rotate(0) scale(1)}50%{transform:rotate(720deg) scale(1.3)}100%{transform:rotate(0) scale(1)}}`}</style>
+      <div className="jl"><svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg"><path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/></svg></div>
+    </div>
+  );
+}
+
+
 export function CalendarDashboard({ onSelectCampaign, userRole }: CalendarDashboardProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -53,7 +63,7 @@ export function CalendarDashboard({ onSelectCampaign, userRole }: CalendarDashbo
   const startDay = monthStart.getDay();
   const emptyDays = Array.from({ length: startDay });
 
-  if (loading) { return null; }
+  if (loading) { return <StarLoader />; }
 
   return (
     <motion.div 
