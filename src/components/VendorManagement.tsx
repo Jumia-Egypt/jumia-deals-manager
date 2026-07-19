@@ -1077,7 +1077,7 @@ export function VendorManagement() {
                   <input
                     type="password"
                     required
-                    placeholder="ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢"
+                    placeholder="Enter password"
                     value={newVendorPassword}
                     onChange={(e) => setNewVendorPassword(e.target.value)}
                     className="w-full border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
@@ -1195,7 +1195,7 @@ export function VendorManagement() {
                         <div className="flex items-center gap-1.5 font-medium">
                           <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                            {isPassVisible ? (vendor.password || 'password123') : 'ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢'}
+                            {isPassVisible ? (vendor.password || 'password123') : '••••••••'}
                           </span>
                           <button
                             type="button"
@@ -1281,7 +1281,7 @@ export function VendorManagement() {
                           <div className="flex items-center gap-1.5 font-medium">
                             <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-mono bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                              {isPassVisible ? (vendor.password || 'ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢') : 'ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢'}
+                              {isPassVisible ? (vendor.password || 'password123') : '••••••••'}
                             </span>
                             <button type="button" onClick={(e) => togglePasswordVisibility(vendor.id, e)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors">
                               {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
