@@ -273,7 +273,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
             </span>
             {chartData.map((day: any) => {
               const isSelected = selectedDay && selectedDay.date === day.date;
-  if (!dataReady) return <StarLoader />;
               return (
                 <button
                   key={day.date}
@@ -298,7 +297,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           <div className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-800">Model Performance ÃÂ¢ÃÂÃÂ GIS</h3>
+                <h3 className="text-sm font-bold text-slate-800">Model Performance ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ GIS</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {selectedDay ? `Items sold on ${selectedDay.date}` : 'All-time totals'}
                 </p>
