@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, TrendingUp, ShoppingCart, Package, Calendar, Info } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -12,7 +12,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
   const [activeMetric, setActiveMetric] = useState<'gmv' | 'orders' | 'items'>('gmv');
   const [vendorData, setVendorData] = useState<any>(null);
   const [selectedDay, setSelectedDay] = useState<any>(null);
-  const [modelsData, setModelsData] = useState<any[]>([]);
   const hoveredDayRef = useRef<any>(null);
 
   useEffect(() => {
@@ -38,7 +37,7 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
     // Fetch models GIS data from Supabase via API
     fetch(`/api/models?vendor_id=${vendorId}`)
       .then(r => r.json())
-      .then(rows => { if (Array.isArray(rows)) setModelsData(rows); })
+      .then(rows => { if (Array.isArray(rows)) window.__modelsData = rows; })
       .catch(() => {});
 
     // Fetch daily performance from Supabase via API
@@ -87,7 +86,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
   const targetGMV = vendorData.targetGMV || 0;
   const currentGMV = vendorData.achievementGMV || 0;
   const progress = targetGMV > 0 ? (currentGMV / targetGMV) * 100 : 0;
-
   const totalOrders = vendorData.countOfOrders || 0;
   const totalItems = vendorData.grossItemSold || 0;
   const chartData = vendorData.dailyData || [];
@@ -102,277 +100,292 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
 
   const config = getMetricConfig();
 
+  // Build models list from Supabase API data (window.__modelsData) or fall back to empty
+  const getActiveModelsList = () => {
+    const apiModels: any[] = (window as any).__modelsData || [];
+    if (apiModels.length === 0) return [];
+
+    if (selectedDay) {
+      const filtered = apiModels.filter((r: any) => r.date === selectedDay.rawDate);
+      const total = filtered.reduce((s: number, r: any) => s + Number(r.gross_items || 0), 0);
+      return filtered
+        .map((r: any) => ({ name: r.model_name, sold: Number(r.gross_items || 0), percentage: total > 0 ? (Number(r.gross_items || 0) / total) * 100 : 0 }))
+        .sort((a: any, b: any) => b.sold - a.sold);
+    } else {
+      const agg: Record<string, number> = {};
+      apiModels.forEach((r: any) => { agg[r.model_name] = (agg[r.model_name] || 0) + Number(r.gross_items || 0); });
+      const total = Object.values(agg).reduce((s, v) => s + v, 0);
+      return Object.entries(agg)
+        .map(([name, sold]) => ({ name, sold, percentage: total > 0 ? (sold / total) * 100 : 0 }))
+        .sort((a: any, b: any) => b.sold - a.sold);
+    }
+  };
+
+  const modelsList = getActiveModelsList();
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">My Performance</h2>
-        <p className="text-sm text-slate-500 mt-1">Track your campaign achievements against your targets.</p>
+        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">My Performance</h2>
+        <p className="text-sm text-slate-500 mt-1 font-medium">Track your campaign achievements against your targets.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-orange-50 text-orange-600">
-              <Target className="w-6 h-6" />
+        {/* GMV Target Card */}
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-shadow">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-orange-50 rounded-full blur-2xl group-hover:bg-orange-100 transition-colors duration-500"></div>
+          <div className="flex items-center gap-4 mb-6 relative z-10">
+            <div className="p-3.5 rounded-2xl bg-orange-100/80 text-orange-600 shadow-inner">
+              <Target className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Needed Target (GMV)</p>
-              <h3 className="text-3xl font-black text-slate-900">{targetGMV.toLocaleString()} <span className="text-lg text-slate-400">EGP</span></h3>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Needed Target (GMV)</p>
+              <h3 className="text-4xl font-black text-slate-900 tracking-tight">{targetGMV.toLocaleString()} <span className="text-xl font-bold text-slate-400">EGP</span></h3>
             </div>
           </div>
-
-          <div className="space-y-2 mt-4">
+          <div className="space-y-3 mt-2 relative z-10">
             <div className="flex justify-between items-end">
               <div>
-                <p className="text-xs font-bold text-slate-500">Current Achievement</p>
-                <p className="text-lg font-bold text-orange-600">{currentGMV.toLocaleString()} EGP</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Current Achievement</p>
+                <p className="text-xl font-bold text-orange-600">{currentGMV.toLocaleString()} EGP</p>
               </div>
-              <p className="text-xl font-black text-slate-900">{progress.toFixed(1)}%</p>
+              <p className="text-2xl font-black text-slate-900">{progress.toFixed(1)}%</p>
             </div>
-            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner p-0.5">
               <div
-                className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000"
+                className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000 shadow-sm relative overflow-hidden"
                 style={{ width: `${Math.min(progress, 100)}%` }}
-              />
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 text-white flex flex-col justify-center relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
-          <div className="relative z-10 grid grid-cols-2 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-2 text-slate-400">
-                <ShoppingCart className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">Total Orders</span>
+        {/* Orders & Items Card */}
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-shadow">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-orange-50 rounded-full blur-2xl group-hover:bg-orange-100 transition-colors duration-500"></div>
+          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-orange-50/50 rounded-full blur-2xl"></div>
+          <div className="relative z-10 grid grid-cols-2 gap-8 h-full items-center">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-slate-500">
+                <div className="p-2 rounded-xl bg-orange-100/80 text-orange-600 shadow-inner">
+                  <ShoppingCart className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest">Total Orders</span>
               </div>
-              <p className="text-3xl font-black">{totalOrders.toLocaleString()}</p>
+              <p className="text-4xl font-black tracking-tight text-slate-900">{totalOrders.toLocaleString()}</p>
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-2 text-slate-400">
-                <Package className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">Gross Items</span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-slate-500">
+                <div className="p-2 rounded-xl bg-orange-100/80 text-orange-600 shadow-inner">
+                  <Package className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest">Gross Items</span>
               </div>
-              <p className="text-3xl font-black">{totalItems.toLocaleString()}</p>
+              <p className="text-4xl font-black tracking-tight text-slate-900">{totalItems.toLocaleString()}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-          <h3 className="text-lg font-bold text-slate-900">Daily Progress</h3>
-          <div className="flex bg-slate-100 p-1 rounded-lg">
-            <button
-              onClick={() => setActiveMetric('gmv')}
-              className={clsx(
-                "px-4 py-2 rounded-md text-sm font-bold transition-all",
-                activeMetric === 'gmv' ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              )}
-            >
-              GMV
-            </button>
-            <button
-              onClick={() => setActiveMetric('orders')}
-              className={clsx(
-                "px-4 py-2 rounded-md text-sm font-bold transition-all",
-                activeMetric === 'orders' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              )}
-            >
-              Orders
-            </button>
-            <button
-              onClick={() => setActiveMetric('items')}
-              className={clsx(
-                "px-4 py-2 rounded-md text-sm font-bold transition-all",
-                activeMetric === 'items' ? "bg-white text-purple-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              )}
-            >
-              Gross IS
-            </button>
+      {/* Bar Chart Card */}
+      <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
+          <div>
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Daily Progress</h3>
+            <p className="text-sm text-slate-500 mt-1 font-medium">Click on the graph to view daily details</p>
+          </div>
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl shadow-inner">
+            <button onClick={() => setActiveMetric('gmv')} className={clsx("px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 outline-none", activeMetric === 'gmv' ? "bg-white text-orange-600 shadow-sm scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50")}>GMV</button>
+            <button onClick={() => setActiveMetric('orders')} className={clsx("px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 outline-none", activeMetric === 'orders' ? "bg-white text-blue-600 shadow-sm scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50")}>Orders</button>
+            <button onClick={() => setActiveMetric('items')} className={clsx("px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 outline-none", activeMetric === 'items' ? "bg-white text-purple-600 shadow-sm scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50")}>Gross IS</button>
           </div>
         </div>
 
-        <div className="h-[350px] w-full">
-          {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={chartData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-              className="cursor-pointer"
-              onMouseMove={(state: any) => {
-                if (state && typeof state.activeTooltipIndex === 'number' && chartData[state.activeTooltipIndex]) {
-                  hoveredDayRef.current = chartData[state.activeTooltipIndex];
-                }
-              }}
-              onClick={() => {
-                if (hoveredDayRef.current) {
-                  setSelectedDay(hoveredDayRef.current);
-                }
-              }}
-            >
-              <defs>
-                <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={config.color} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={config.color} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: '#64748b' }}
-                dy={10}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: '#64748b' }}
-                tickFormatter={(val) => activeMetric === 'gmv' ? `${(val/1000)}k` : val}
-                dx={-10}
-              />
-              <Tooltip
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}
-                formatter={(value: number) => [
-                  activeMetric === 'gmv' ? `${value.toLocaleString()} EGP` : value.toLocaleString(),
-                  config.name
-                ]}
-              />
-              <Area
-                type="monotone"
-                dataKey={config.key}
-                stroke={config.color}
-                strokeWidth={3}
-                fillOpacity={1}
-                fill="url(#colorMetric)"
-                dot={{ r: 4, stroke: config.color, strokeWidth: 2, fill: '#fff' }}
-                activeDot={{ r: 7, stroke: config.color, strokeWidth: 2, fill: '#fff' }}
-                onClick={(data: any) => {
-                  if (data && data.payload) {
-                    setSelectedDay(data.payload);
-                  }
-                }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="h-[400px] w-full">
+  #       {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }} barSize={40}
+                onMouseMove={(state: any) => { if (state && typeof state.activeTooltipIndex === 'number' && chartData[state.activeTooltipIndex]) hoveredDayRef.current = chartData[state.activeTooltipIndex]; }}
+                onClick={() => { if (hoveredDayRef.current) setSelectedDay(hoveredDayRef.current); }}
+              >
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={config.color} stopOpacity={1}/>
+                    <stop offset="100%" stopColor={config.color} stopOpacity={0.7}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#94a3b8', fontWeight: 600 }} dy={15} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#94a3b8', fontWeight: 600 }} tickFormatter={(val) => activeMetric === 'gmv' ? `${(val/1000)}k` : val} dx={-15} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1e293b', borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)', padding: '12px 16px' }}
+                  itemStyle={{ color: '#f8fafc', fontWeight: '800', fontSize: '16px' }}
+                  labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  cursor={{ fill: '#f8fafc22' }}
+                  formatter={(value: number) => [activeMetric === 'gmv' ? `${value.toLocaleString()} EGP` : value.toLocaleString(), config.name]}
+                />
+                <Bar dataKey={config.key} fill="url(#barGradient)" radius={[8, 8, 0, 0]}
+                  onClick={(data: any) => { if (data && data.payload) setSelectedDay(data.payload); }}
+                >
+                  {chartData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`}
+                      fill={selectedDay && selectedDay.date === entry.date ? config.color : 'url(#barGradient)'}
+                      opacity={selectedDay && selectedDay.date !== entry.date ? 0.4 : 1}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400 italic">
-              No daily data available yet.
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-2xl border border-slate-100 border-dashed">
+              <TrendingUp className="w-8 h-8 mb-3 text-slate-300" />
+              <p className="font-medium">No daily data available yet.</p>
             </div>
           )}
         </div>
 
+        {/* Quick Select Date Pills */}
         {chartData.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-2 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
-            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider ml-1 mr-2 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              Quick Select Date:
-            </span>
-            {chartData.map((day: any) => {
-              const isSelected = selectedDay && selectedDay.date === day.date;
-              return (
-                <button
-                  key={day.date}
-                  type="button"
-                  onClick={() => setSelectedDay(day)}
-                  className={clsx(
-                    "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border",
-                    isSelected
-                      ? "bg-orange-500 text-white border-orange-500 shadow-sm scale-105"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:scale-95"
-                  )}
-                >
-                  {day.date}
-                </button>
-              );
-            })}
+          <div className="mt-8 flex flex-wrap gap-2.5 items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <div className="flex flex-wrap gap-2.5 items-center">
+              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest ml-1 mr-2 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-slate-400" />
+                Quick Select Date:
+              </span>
+              {chartData.map((day: any) => {
+                const isSelected = selectedDay && selectedDay.date === day.date;
+                return (
+                  <button key={day.date} type="button" onClick={() => setSelectedDay(day)}
+                    className={clsx(
+                      "px-4 py-2 rounded-xl text-sm font-bold transition-all outline-none",
+                      isSelected
+                        ? "bg-orange-600 text-white shadow-md scale-105 border border-orange-600"
+                        : "bg-white text-slate-600 border border-slate-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 active:scale-95 shadow-sm"
+                    )}
+                  >
+                    {day.date}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedDay && (
+              <button type="button" onClick={() => setSelectedDay(null)}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-orange-600 border border-orange-200 hover:bg-orange-50 hover:border-orange-300 active:scale-95 shadow-sm outline-none flex items-center gap-1.5"
+              >
+                Clear Selection
+              </button>
+            )}
           </div>
         )}
 
         {/* Daily Breakdown */}
-        <AnimatePresence>
-          {selectedDay && (
-            <motion.div
-              key={selectedDay.date}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mt-6 bg-white rounded-2xl shadow-sm border-2 border-orange-200 p-6"
-            >
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h3 className="text-base font-bold text-slate-800">Daily Breakdown</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Performance on {selectedDay.date}</p>
+        <div className="mt-8 pt-8 border-t border-slate-100">
+          <AnimatePresence mode="wait">
+            {selectedDay ? (
+              <motion.div key={selectedDay.date} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 300, damping: 25 }} className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-xl text-orange-600 shadow-sm">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-base font-bold text-slate-800">
+                    Daily Breakdown for <span className="text-orange-600 font-black">{selectedDay.date}</span>
+                  </h4>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">{selectedDay.date}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDay(null)}
-                    className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/50"
-                  >
-                    Clear
-                  </button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="bg-slate-50 p-5 rounded-2xl flex items-center gap-4 hover:bg-slate-100 group transition-colors">
+                    <div className="p-3 bg-orange-100/50 rounded-xl text-orange-600 group-hover:bg-orange-100 transition-colors">
+                      <TrendingUp className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">GMV Achievement</p>
+                      <p className="text-xl font-black text-slate-900">{Number(selectedDay.gmv || 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">EGP</span></p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 p-5 rounded-2xl flex items-center gap-4 hover:bg-slate-100 group transition-colors">
+                    <div className="p-3 bg-blue-100/50 rounded-xl text-blue-600 group-hover:bg-blue-100 transition-colors">
+                      <ShoppingCart className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Count of Orders</p>
+                      <p className="text-xl font-black text-slate-900">{Number(selectedDay.orders || 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">Orders</span></p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 p-5 rounded-2xl flex items-center gap-4 hover:bg-slate-100 group transition-colors">
+                    <div className="p-3 bg-purple-100/50 rounded-xl text-purple-600 group-hover:bg-purple-100 transition-colors">
+                      <Package className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Gross Items Sold</p>
+                      <p className="text-xl font-black text-slate-900">{Number(selectedDay.items || 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">Items</span></p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-orange-50 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">GMV</p>
-                  <p className="text-base font-bold text-orange-600">{selectedDay.gmv.toLocaleString()} EGP</p>
+              </motion.div>
+            ) : (
+              <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex items-center gap-3 text-sm font-semibold text-slate-500 bg-white p-5 rounded-2xl border border-slate-200 border-dashed"
+              >
+                <div className="p-2 bg-orange-50 text-orange-500 rounded-lg shrink-0">
+                  <Info className="w-5 h-5" />
                 </div>
-                <div className="bg-slate-50 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Orders</p>
-                  <p className="text-base font-bold text-slate-800">{selectedDay.orders.toLocaleString()}</p>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Items Sold</p>
-                  <p className="text-base font-bold text-slate-800">{selectedDay.items.toLocaleString()}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {!selectedDay && (
-          <div className="mt-6 flex items-center gap-2.5 text-xs font-semibold text-slate-400 bg-slate-50 p-4 rounded-xl border border-slate-100">
-            <Info className="w-4 h-4 text-orange-500 shrink-0" />
-            <span>Tip: Click on any date point inside the graph above to view its detailed breakdown for GMV, Orders, and Gross IS.</span>
-          </div>
-        )}
-
-        {/* Model Performance – GIS */}
-        <div className={`mt-4 bg-white rounded-2xl shadow-sm border-2 overflow-hidden transition-colors ${selectedDay ? 'border-orange-200' : 'border-slate-200'}`}>
-          <div className={`flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 transition-colors ${selectedDay ? 'bg-orange-50' : 'bg-slate-50'}`}>
-            <Package className={`w-4 h-4 ${selectedDay ? 'text-orange-500' : 'text-slate-400'}`} />
-            <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
-              Model Performance {'–'} GIS{selectedDay ? ` — ${selectedDay.date}` : ''}
-            </h4>
-            {selectedDay && (
-              <span className="ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">{selectedDay.date}</span>
+                <span>Click on any date point inside the graph above to view its detailed breakdown for GMV, Orders, and Gross IS.</span>
+              </motion.div>
             )}
-          </div>
-          <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
-            {(() => {
-              const items = selectedDay
-                ? modelsData.filter((r: any) => r.date === selectedDay.rawDate)
-                : modelsData;
-              if (items.length === 0) return (
-                <p className="text-sm text-slate-400 text-center py-8">
-                  {selectedDay ? `No model data for ${selectedDay.date}` : 'No model data available'}
-                </p>
-              );
-              return items.map((r: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between py-2.5 px-5">
-                  <span className="text-xs text-slate-700 flex-1 pr-4">{r.model_name}</span>
-                  <span className="text-xs font-bold text-orange-600 shrink-0">{r.gross_items} units</span>
-                </div>
-              ));
-            })()}
-          </div>
+          </AnimatePresence>
         </div>
       </div>
+
+      {/* Model Sales Distribution Table */}
+      {modelsList.length > 0 && (
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+                {selectedDay ? `Model Sales Breakdown: ${selectedDay.date}` : 'Model Sales Distribution'}
+              </h3>
+              <p className="text-sm text-slate-500 mt-1 font-medium">
+                {selectedDay ? `Detailed item sales for models sold on ${selectedDay.date}.` : 'Cumulative item sales for all time.'}
+              </p>
+            </div>
+            <div className="self-start sm:self-center px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+              {selectedDay ? 'Day View' : 'All-time totals'}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 font-bold text-xs uppercase tracking-widest">
+                  <th className="pb-4">Model Name</th>
+                  <th className="pb-4 text-right">Items Sold</th>
+                  <th className="pb-4 text-right">Volume Share</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {modelsList.map((model: any) => (
+                  <tr key={model.name} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="py-4 font-semibold text-slate-900 text-sm flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"></span>
+                      {model.name}
+                    </td>
+                    <td className="py-4 text-sm font-black text-slate-900 text-right">{model.sold.toLocaleString()}</td>
+                    <td className="py-4 text-right">
+                      <div className="flex items-center justify-end gap-3">
+                        <span className="text-xs font-bold text-slate-500">{model.percentage.toFixed(1)}%</span>
+                        <div className="w-24 bg-slate-100 h-2 rounded-full overflow-hidden p-0.5">
+                          <div className="bg-orange-500 h-full rounded-full transition-all duration-500" style={{ width: `${model.percentage}%` }}></div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
