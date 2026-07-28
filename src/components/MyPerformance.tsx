@@ -8,22 +8,11 @@ interface MyPerformanceProps {
   vendorId?: string | null;
 }
 
-function StarLoader() {
-  return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'4rem 0'}}>
-      <style>{`.jl{--d:4rem;background:#f97316;width:var(--d);height:var(--d);border-radius:50%;display:grid;place-items:center;animation:sp412 5s infinite;box-shadow:0 0 30px rgba(249,115,22,.3)}.jl svg{transform:translateY(-2px) scale(.7)}@keyframes sp412{0%{transform:rotate(0) scale(1)}50%{transform:rotate(720deg) scale(1.3)}100%{transform:rotate(0) scale(1)}}`}</style>
-      <div className="jl"><svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg"><path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/></svg></div>
-    </div>
-  );
-}
-
-
 export function MyPerformance({ vendorId }: MyPerformanceProps) {
   const [activeMetric, setActiveMetric] = useState<'gmv' | 'orders' | 'items'>('gmv');
   const [vendorData, setVendorData] = useState<any>(null);
   const [selectedDay, setSelectedDay] = useState<any>(null);
   const [modelsData, setModelsData] = useState<any[]>([]);
-  const [dataReady, setDataReady] = useState(false);
   const hoveredDayRef = useRef<any>(null);
 
   useEffect(() => {
@@ -58,7 +47,6 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
       .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) {
           setVendorData({ id: vendorId, name: vendorName, targetGMV, achievementGMV: 0, countOfOrders: 0, grossItemSold: 0, dailyData: [] });
-        setDataReady(true);
           return;
         }
         const dailyData = rows.map((r: any) => ({
@@ -83,7 +71,18 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
       });
   }, [vendorId]);
 
-  if (!vendorData) return <StarLoader />;
+  if (!vendorData) {
+    return (
+      <div className="flex items-center justify-center min-h-[120px]">
+        <style>{`.jumia-loader{--dim:2.2rem;background-color:#f97316;opacity:0.55;width:var(--dim);height:var(--dim);border-radius:50%;display:grid;place-items:center;animation:spin_412 5s infinite;} .jumia-loader svg{transform:translateY(-1px) scale(.65);} @keyframes spin_412{0%{transform:rotate(0) scale(1);}50%{transform:rotate(720deg) scale(1.2);}100%{transform:rotate(0) scale(1);}}`}</style>
+        <div className="jumia-loader">
+          <svg version="1.1" viewBox="0 0 47.94 47.94" xmlns="http://www.w3.org/2000/svg">
+            <path style={{fill:'#fff'}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956c0.947-1.919,3.683-1.919,4.63,0z"/>
+          </svg>
+        </div>
+      </div>
+    );
+  }
 
   const targetGMV = vendorData.targetGMV || 0;
   const currentGMV = vendorData.achievementGMV || 0;
@@ -292,127 +291,86 @@ export function MyPerformance({ vendorId }: MyPerformanceProps) {
           </div>
         )}
 
-
-        {modelsData.length > 0 && (
-          <div className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-slate-800">Model Performance ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ GIS</h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {selectedDay ? `Items sold on ${selectedDay.date}` : 'All-time totals'}
-                </p>
-              </div>
-              {selectedDay && (
-                <span className="text-xs bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full font-medium">
-                  {selectedDay.date}
-                </span>
-              )}
-            </div>
-            <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
-              {(() => {
-                const filtered = selectedDay
-                  ? modelsData.filter((r: any) => r.date === selectedDay.rawDate)
-                  : modelsData;
-                const grouped: Record<string, number> = {};
-                filtered.forEach((r: any) => {
-                  grouped[r.model_name] = (grouped[r.model_name] || 0) + Number(r.gross_items || 0);
-                });
-                const sorted = Object.entries(grouped)
-                  .sort(([, a], [, b]) => (b as number) - (a as number))
-                  .filter(([, v]) => (v as number) > 0);
-                if (sorted.length === 0) return (
-                  <p className="text-xs text-slate-400 text-center py-6">No items sold{selectedDay ? ' on this day' : ''}</p>
-                );
-                return sorted.map(([name, items]) => (
-                  <div key={name} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                    <span className="text-xs text-slate-700 flex-1 mr-4 leading-snug">{name}</span>
-                    <span className="text-xs font-bold text-orange-600 shrink-0 tabular-nums">{items as number} units</span>
-                  </div>
-                ));
-              })()}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-6 pt-6 border-t border-slate-100">
-          <AnimatePresence mode="wait">
-            {selectedDay ? (
-              <motion.div
-                key={selectedDay.date}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-orange-50 rounded-lg text-orange-500">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-800">
-                      Daily Breakdown for <span className="text-orange-600 font-extrabold">{selectedDay.date}</span>
-                    </h4>
-                  </div>
+        {/* Daily Breakdown */}
+        <AnimatePresence>
+          {selectedDay && (
+            <motion.div
+              key={selectedDay.date}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mt-6 bg-white rounded-2xl shadow-sm border-2 border-orange-200 p-6"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">Daily Breakdown</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Performance on {selectedDay.date}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">{selectedDay.date}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedDay(null)}
                     className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/50"
                   >
-                    Clear Selection
+                    Clear
                   </button>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
-                    <div className="p-2.5 bg-orange-500/10 rounded-lg text-orange-600">
-                      <TrendingUp className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">GMV Achievement</p>
-                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
-                        {Number(selectedDay.gmv || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">EGP</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
-                    <div className="p-2.5 bg-blue-500/10 rounded-lg text-blue-600">
-                      <ShoppingCart className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Count of Orders</p>
-                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
-                        {Number(selectedDay.orders || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">Orders</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex items-center gap-3.5 transition-all hover:bg-slate-50">
-                    <div className="p-2.5 bg-purple-500/10 rounded-lg text-purple-600">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gross Items Sold (IS)</p>
-                      <p className="text-base font-extrabold text-slate-800 mt-0.5">
-                        {Number(selectedDay.items || 0).toLocaleString()} <span className="text-[11px] font-medium text-slate-500">Items</span>
-                      </p>
-                    </div>
-                  </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-orange-50 rounded-xl p-4 text-center">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">GMV</p>
+                  <p className="text-base font-bold text-orange-600">{selectedDay.gmv.toLocaleString()} EGP</p>
                 </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="placeholder"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-2.5 text-xs font-semibold text-slate-400 bg-slate-50 p-4 rounded-xl border border-slate-100"
-              >
-                <Info className="w-4 h-4 text-orange-500 shrink-0" />
-                <span>Tip: Click on any date point inside the graph above to view its detailed breakdown for GMV, Orders, and Gross IS.</span>
-              </motion.div>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Orders</p>
+                  <p className="text-base font-bold text-slate-800">{selectedDay.orders.toLocaleString()}</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Items Sold</p>
+                  <p className="text-base font-bold text-slate-800">{selectedDay.items.toLocaleString()}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {!selectedDay && (
+          <div className="mt-6 flex items-center gap-2.5 text-xs font-semibold text-slate-400 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <Info className="w-4 h-4 text-orange-500 shrink-0" />
+            <span>Tip: Click on any date point inside the graph above to view its detailed breakdown for GMV, Orders, and Gross IS.</span>
+          </div>
+        )}
+
+        {/* Model Performance – GIS */}
+        <div className={`mt-4 bg-white rounded-2xl shadow-sm border-2 overflow-hidden transition-colors ${selectedDay ? 'border-orange-200' : 'border-slate-200'}`}>
+          <div className={`flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 transition-colors ${selectedDay ? 'bg-orange-50' : 'bg-slate-50'}`}>
+            <Package className={`w-4 h-4 ${selectedDay ? 'text-orange-500' : 'text-slate-400'}`} />
+            <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
+              Model Performance {'–'} GIS{selectedDay ? ` — ${selectedDay.date}` : ''}
+            </h4>
+            {selectedDay && (
+              <span className="ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">{selectedDay.date}</span>
             )}
-          </AnimatePresence>
+          </div>
+          <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+            {(() => {
+              const items = selectedDay
+                ? modelsData.filter((r: any) => r.date === selectedDay.rawDate)
+                : modelsData;
+              if (items.length === 0) return (
+                <p className="text-sm text-slate-400 text-center py-8">
+                  {selectedDay ? `No model data for ${selectedDay.date}` : 'No model data available'}
+                </p>
+              );
+              return items.map((r: any, idx: number) => (
+                <div key={idx} className="flex items-center justify-between py-2.5 px-5">
+                  <span className="text-xs text-slate-700 flex-1 pr-4">{r.model_name}</span>
+                  <span className="text-xs font-bold text-orange-600 shrink-0">{r.gross_items} units</span>
+                </div>
+              ));
+            })()}
+          </div>
         </div>
       </div>
     </div>
