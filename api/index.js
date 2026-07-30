@@ -132,6 +132,23 @@ module.exports = async function handler(req, res) {
       if (error) return res.status(500).json({ error: error.message });
       return res.json({ success: true, count: records.length });
     }
+    // PATCH: update only models_data for existing rows (does not touch GMV/orders/items)
+    if (req.method === 'PATCH') {
+      const { vendor_id, rows } = body;
+      if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
+      if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'rows array required' });
+      let updated = 0;
+      for (const row of rows) {
+        if (!row.date || !Array.isArray(row.models_data)) continue;
+        const { error } = await supabase
+          .from('vendor_performance')
+          .update({ models_data: row.models_data })
+          .eq('vendor_id', vendor_id)
+          .eq('date', row.date);
+        if (!error) updated++;
+      }
+      return res.json({ success: true, updated });
+    }
     if (req.method === 'DELETE') {
       const { vendor_id } = q;
       if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
@@ -324,11 +341,11 @@ module.exports = async function handler(req, res) {
     return res.json({ valid: true, discountPercent: finalDiscount.toFixed(2), savings: (product.priceBeforeDiscount - price).toFixed(2), message: 'Valid campaign price. Ready for submission.' });
   }
 
-  // ── /api/vendors ─────────────────────────────────────────────────────────
+  // ── /api/vendors ──────────────────────────────────────────────────────────
   if (parts[0] === 'vendors') {
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('users')
-        .select('id,name,email,role,created_at').order('created_at', { ascending: false });
+        .select('id,name,email,role,password,created_at').order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
       return res.json(data || []);
     }
@@ -364,17 +381,14 @@ module.exports = async function handler(req, res) {
     }
   }
 
-
-  // ── /api/models ───────────────────────────────────────────────────────────
-  // GET  /api/models?vendor_id=xxx  → rows from vendor_models_gis
-  // POST /api/models                → upsert { vendor_id, rows: [{date,model_name,gmv,gross_orders,gross_items}] }
-  if (parts[0] === 'models') {
+  // ── /api/models ─────────────────────────────────────────────────────────
+  if (parts[0] === 'models' && !parts[1]) {
     if (req.method === 'GET') {
       const { vendor_id } = q;
       if (!vendor_id) return res.status(400).json({ error: 'vendor_id required' });
       const { data, error } = await supabase
         .from('vendor_models_gis')
-        .select('date,model_name,gmv,gross_orders,gross_items')
+        .select('*')
         .eq('vendor_id', vendor_id)
         .order('date', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
@@ -382,23 +396,21 @@ module.exports = async function handler(req, res) {
     }
     if (req.method === 'POST') {
       const { vendor_id, rows } = body;
-      if (!vendor_id || !Array.isArray(rows) || rows.length === 0)
-        return res.status(400).json({ error: 'vendor_id and rows[] required' });
+      if (!vendor_id || !rows?.length) return res.status(400).json({ error: 'vendor_id and rows required' });
       const records = rows.map(r => ({
         vendor_id,
-        date:         r.date,
-        model_name:   String(r.model_name || '').trim(),
-        gmv:          parseFloat(r.gmv) || 0,
-        gross_orders: parseInt(r.gross_orders, 10) || 0,
-        gross_items:  parseInt(r.gross_items, 10) || 0,
-      })).filter(r => r.date && r.model_name);
+        date: r.date,
+        model_name: r.model_name,
+        gmv: r.gmv || 0,
+        gross_orders: r.gross_orders || 0,
+        gross_items: r.gross_items || 0,
+      }));
       const { error } = await supabase
         .from('vendor_models_gis')
         .upsert(records, { onConflict: 'vendor_id,date,model_name' });
       if (error) return res.status(500).json({ error: error.message });
-      return res.json({ inserted: records.length });
+      return res.json({ success: true, count: records.length });
     }
-    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   return res.status(404).json({ error: 'Not found', path: req.url });
